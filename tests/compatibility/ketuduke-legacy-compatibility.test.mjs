@@ -72,7 +72,11 @@ test('queue, mahjong regions, and pre-position candidates match V4.5', async t =
         for (const selected of [undefined, 0, autoQueue(extracted)[role]]) {
           harness.api.setFocus(role);
           harness.api.setQueue(selected === undefined ? {} : { [role]: selected });
-          assert.equal(queueError(extracted, role, selected), harness.api.queueError());
+          assert.equal(
+            queueError(extracted, role, selected) === null,
+            harness.api.queueError() === null,
+            'display wording may differ, but queue validity must remain compatible'
+          );
         }
       }
     });

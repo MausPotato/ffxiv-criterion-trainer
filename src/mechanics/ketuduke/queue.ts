@@ -1,6 +1,7 @@
 import { GRID_SIZE, isInsideGrid, toCellIndex, toCoordinate } from '../../domain/grid.ts';
 import { type Role, type RoleMap } from '../../domain/roles.ts';
 import type { CellIndex } from '../../domain/grid.ts';
+import { formatCellCoordinate } from '../../domain/grid-coordinate-format.ts';
 import type { KetudukeQuestion, MahjongRegion } from './types.ts';
 
 export function queueLine(question: KetudukeQuestion): CellIndex[] {
@@ -57,6 +58,5 @@ export function queueError(question: KetudukeQuestion, role: Role, selected?: Ce
   if (selected === undefined) return '請選自己的排隊位置。';
   const ideal = autoQueue(question)[role];
   if (selected === ideal) return null;
-  const { r, c } = toCoordinate(ideal);
-  return `你的排隊位置不符：${role} 應站第 ${r + 1} 排、第 ${c + 1} 格。`;
+  return `你的排隊位置不符：${role} 應站${formatCellCoordinate(ideal)}。`;
 }

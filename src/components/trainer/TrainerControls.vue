@@ -129,7 +129,7 @@ defineEmits<{
     </button>
     <div v-if="hintVisible" class="hint-card">
       <strong>排隊法口訣</strong>
-      <p>橫水晶排直列，直水晶排橫列；止步站兩側，泡泡站中間。</p>
+      <p>橫水晶排直行，直水晶排橫列；止步站兩側，泡泡站中間。</p>
       <p>麻將揭示後依①、②方向移動一格，再確認吹風前站位。</p>
     </div>
   </section>

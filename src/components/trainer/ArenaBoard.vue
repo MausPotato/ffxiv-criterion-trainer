@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import type { CellIndex } from '../../domain/grid.ts';
+import { formatGridCoordinate } from '../../domain/grid-coordinate-format.ts';
 import { ROLES, type PartialRoleMap, type Role } from '../../domain/roles.ts';
 import type { KetudukeQuestion, TrainerPhase } from '../../mechanics/ketuduke/types.ts';
 import { mahjongRegion } from '../../mechanics/ketuduke/queue.ts';
@@ -31,7 +32,7 @@ const cells = computed(() => Array.from({ length: 16 }, (_, index) => {
     : undefined;
   const roles = ROLES.filter(role => props.positions?.[role] === index);
   const mahjong = props.mahVisible ? mahjongRegion(props.question, r, c) : undefined;
-  return { index, r, c, crystal, roles, mahjong };
+  return { index, r, c, crystal, roles, mahjong, coordinateLabel: formatGridCoordinate({ r, c }) };
 }));
 </script>
 
@@ -44,7 +45,7 @@ const cells = computed(() => Array.from({ length: 16 }, (_, index) => {
         class="arena-tile"
         :class="{ 'queue-line': phase === 0 && queueCells.includes(cell.index), selected: cell.roles.length > 0 }"
         type="button"
-        :aria-label="`第 ${cell.r + 1} 排第 ${cell.c + 1} 格`"
+        :aria-label="cell.coordinateLabel"
         :disabled="!interactive"
         @click="$emit('selectCell', cell.index)"
       >

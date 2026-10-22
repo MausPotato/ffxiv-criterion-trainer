@@ -52,6 +52,10 @@ class FakeScheduler {
     }
     this.time = target;
   }
+
+  elapseWithoutCallbacks(target) {
+    this.time = target;
+  }
 }
 
 function createTrainer(fixedQuestion = FIXED_QUESTION) {
@@ -169,6 +173,39 @@ test('an unfinished pre-position window dies five seconds after entering phase t
   assert.equal(trainer.displayPosition.value, autoQueue(FIXED_QUESTION).MT);
 });
 
+test('late input cannot beat a delayed queue timer callback', () => {
+  const { trainer, scheduler } = createTrainer();
+  trainer.start();
+
+  scheduler.elapseWithoutCallbacks(5_001);
+  trainer.selectCell(autoQueue(FIXED_QUESTION).MT);
+
+  assert.equal(trainer.death.value.open, true);
+  assert.equal(trainer.queue.value.MT, undefined, 'the late queue selection is not recorded');
+  assert.equal(trainer.phase.value, 0);
+  assert.equal(scheduler.tasks.size, 0);
+});
+
+test('late input cannot overwrite the locked queue answer during the second stage', () => {
+  const { trainer, scheduler } = createTrainer();
+  const queueAnswer = autoQueue(FIXED_QUESTION);
+  const solution = solveParty(FIXED_QUESTION, 'MT');
+  assert.ok(solution);
+
+  trainer.start();
+  trainer.selectCell(queueAnswer.MT);
+  trainer.confirm();
+  const lockedQueue = { ...trainer.queue.value };
+
+  scheduler.elapseWithoutCallbacks(5_001);
+  trainer.selectCell(solution.pre.MT);
+
+  assert.equal(trainer.death.value.open, true);
+  assert.deepEqual(trainer.queue.value, lockedQueue, 'the first-stage answer remains unchanged');
+  assert.equal(trainer.pre.value.MT, undefined, 'the late pre-position is not recorded');
+  assert.equal(scheduler.tasks.size, 0);
+});
+
 test('mahjong run hint appears only after reveal and follows the spread mechanic regions', () => {
   const { trainer, scheduler } = createTrainer();
 
@@ -235,7 +272,10 @@ test('an incorrect submitted position opens YOU DIED and stops the timer', () =>
   trainer.confirm();
 
   assert.equal(trainer.death.value.open, true);
-  assert.match(trainer.death.value.reason, /排隊位置不符/);
+  assert.equal(
+    trainer.death.value.reason,
+    '你的排隊位置不符：MT 應站第 2 直行、第 2 橫列。'
+  );
   assert.equal(trainer.lockPosition.value, true);
   assert.equal(scheduler.tasks.size, 0);
 });

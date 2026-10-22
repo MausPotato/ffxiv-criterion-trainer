@@ -98,7 +98,7 @@ export function validateCrystalGeometry(
   if (spots.size !== 4) return { ok: false, reason: '有水晶重疊，吹風位移模型不一致' };
   const vertical = crystals.filter(crystal => crystal.o === 'v');
   if (vertical.length !== 2 || new Set(vertical.map(crystal => crystal.c)).size !== 2) {
-    return { ok: false, reason: '兩顆直水晶落在同一列，位移模型不一致' };
+    return { ok: false, reason: '兩顆直水晶落在同一直行，位移模型不一致' };
   }
   const safe = referenceSafeZones(question.center);
   const hazards = hazardCells(crystals);

@@ -244,6 +244,24 @@ export function useKetudukeTrainer(options: KetudukeTrainerOptions = {}) {
     );
   }
 
+  function settleExpiredStage(): boolean {
+    if (!settings.value.timed || !ready.value || death.value.open || phase.value >= 2) {
+      return false;
+    }
+
+    const expectedPhase = phase.value as 0 | 1;
+    const startedAt = expectedPhase === 0 ? queueStartedAtMs.value : preStartedAtMs.value;
+    const deadlineAt = expectedPhase === 0 ? queueDeadlineAtMs.value : preDeadlineAtMs.value;
+    if (startedAt === null || deadlineAt === null || scheduler.now() < deadlineAt) {
+      return false;
+    }
+
+    elapsedMs.value = STAGE_DURATION_MS;
+    if (expectedPhase === 0) checkQueue();
+    else checkPrePosition();
+    return true;
+  }
+
   function selectRole(role: Role | null): void {
     if (lockPosition.value) return;
     focus.value = role;
@@ -287,6 +305,7 @@ export function useKetudukeTrainer(options: KetudukeTrainerOptions = {}) {
   }
 
   function selectCell(cell: CellIndex): void {
+    if (settleExpiredStage()) return;
     if (!interactive.value || !focus.value) return;
     if (phase.value === 0) {
       queue.value = { [focus.value]: cell };
@@ -298,6 +317,7 @@ export function useKetudukeTrainer(options: KetudukeTrainerOptions = {}) {
   }
 
   function confirm(): void {
+    if (settleExpiredStage()) return;
     if (phase.value === 0) checkQueue();
     else if (phase.value === 1) checkPrePosition();
   }
