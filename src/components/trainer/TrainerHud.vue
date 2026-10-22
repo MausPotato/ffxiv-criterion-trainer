@@ -13,6 +13,7 @@ defineProps<{
   confirmDisabled: boolean;
   nextDisabled: boolean;
   resetDisabled: boolean;
+  resetText: string;
 }>();
 
 defineEmits<{
@@ -43,8 +44,8 @@ defineEmits<{
     <div class="action-row">
       <button class="primary-button" type="button" :disabled="confirmDisabled" @click="$emit('confirm')">{{ confirmText }}</button>
       <button class="secondary-button" type="button" :disabled="nextDisabled" @click="$emit('next')">揭示麻將</button>
-      <button class="secondary-button" type="button" :disabled="resetDisabled" @click="$emit('reset')">重設本階段</button>
+      <button class="secondary-button" type="button" :disabled="resetDisabled" @click="$emit('reset')">{{ resetText }}</button>
     </div>
-    <p class="phase-note">吹風位移與最終安全區結算將於下一部分接入。</p>
+    <p class="phase-note">作答期間只顯示自己；完成吹風結算後才揭示全隊落點。</p>
   </section>
 </template>

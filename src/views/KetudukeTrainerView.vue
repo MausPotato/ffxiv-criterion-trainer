@@ -4,6 +4,7 @@ import ArenaBoard from '../components/trainer/ArenaBoard.vue';
 import DeathDialog from '../components/trainer/DeathDialog.vue';
 import TrainerControls from '../components/trainer/TrainerControls.vue';
 import TrainerHud from '../components/trainer/TrainerHud.vue';
+import TrainerSettlement from '../components/trainer/TrainerSettlement.vue';
 import { useKetudukeTrainer } from '../composables/useKetudukeTrainer.ts';
 
 const trainer = useKetudukeTrainer();
@@ -31,6 +32,12 @@ const trainer = useKetudukeTrainer();
           :interactive="trainer.interactive.value"
           :queue-cells="trainer.queueCells.value"
           :positions="trainer.visiblePositions.value"
+          :crystals="trainer.visibleCrystals.value"
+          :review="trainer.review.value"
+          :safe-cells="trainer.safeCells.value"
+          :wind-step="trainer.windStep.value"
+          :wind-effects="trainer.windEffects.value"
+          :animate-actors="trainer.replayActive.value"
           @start="trainer.start"
           @select-cell="trainer.selectCell"
         />
@@ -66,9 +73,16 @@ const trainer = useKetudukeTrainer();
           :confirm-disabled="trainer.confirmDisabled.value"
           :next-disabled="trainer.nextDisabled.value"
           :reset-disabled="trainer.resetDisabled.value"
+          :reset-text="trainer.resetText.value"
           @confirm="trainer.confirm"
           @next="trainer.nextStep"
           @reset="trainer.resetStage"
+        />
+
+        <TrainerSettlement
+          v-if="trainer.settlement.value"
+          :settlement="trainer.settlement.value"
+          :party="trainer.question.value.party"
         />
       </aside>
     </div>

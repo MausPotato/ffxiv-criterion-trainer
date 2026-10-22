@@ -3,12 +3,28 @@ import type { CellIndex } from '../domain/grid.ts';
 import { ROLES, type Role } from '../domain/roles.ts';
 import { generateQuestion } from '../mechanics/ketuduke/generation.ts';
 import { autoQueue, queueError, queueLine, wantedMahjongRegion } from '../mechanics/ketuduke/queue.ts';
-import { prePositionError, solveParty } from '../mechanics/ketuduke/solver.ts';
+import { groupCheck, prePositionError, solveParty } from '../mechanics/ketuduke/solver.ts';
+import {
+  crystalMotionPlan,
+  hazardCells,
+  validateCrystalGeometry
+} from '../mechanics/ketuduke/crystals.ts';
+import { referenceSafeZones } from '../mechanics/ketuduke/safe-zones.ts';
+import { simulatePlayerWindStep } from '../mechanics/ketuduke/wind.ts';
+import {
+  WIND_ACTOR_START_DELAY_MS,
+  WIND_ROUND_DURATION_MS,
+  windEffectsForStep
+} from '../presentation/ketuduke/wind-effects.ts';
 import type {
+  CompletePlayerPositions,
+  Crystal,
+  CrystalMotionPlan,
   KetudukeQuestion,
   MahjongRegion,
   PlayerPositions,
-  TrainerPhase
+  TrainerPhase,
+  WindStep
 } from '../mechanics/ketuduke/types.ts';
 
 const TIMER_POLL_MS = 80;
@@ -40,6 +56,18 @@ export interface MahjongRunHint {
   bind: MahjongRegion;
 }
 
+export interface SettlementState {
+  personalPosition: CellIndex;
+  personalSafe: boolean;
+  groupOk: boolean;
+  groupDetail: string;
+  geometryOk: boolean;
+  allPlayersSafe: boolean;
+  valid: boolean;
+  summary: string;
+  limitation: string;
+}
+
 const browserScheduler: TrainerScheduler = {
   now: () => Date.now(),
   setTimeout: (callback, delay) => setTimeout(callback, delay),
@@ -66,6 +94,12 @@ export function useKetudukeTrainer(options: KetudukeTrainerOptions = {}) {
   const hasChecked = ref(false);
   const preConfirmed = ref(false);
   const lockPosition = ref(false);
+  const playerFinal = ref<CompletePlayerPositions | null>(null);
+  const crystalFinal = ref<Crystal[]>([]);
+  const replayActive = ref(false);
+  const windStep = ref<WindStep | null>(null);
+  const review = ref(false);
+  const settlement = ref<SettlementState | null>(null);
   const elapsedMs = ref(0);
   const queueStartedAtMs = ref<number | null>(null);
   const queueDeadlineAtMs = ref<number | null>(null);
@@ -73,19 +107,27 @@ export function useKetudukeTrainer(options: KetudukeTrainerOptions = {}) {
   const preDeadlineAtMs = ref<number | null>(null);
   let timerHandle: ReturnType<typeof setTimeout> | null = null;
   let timerGeneration = 0;
+  const replayHandles = new Set<ReturnType<typeof setTimeout>>();
+  let replayGeneration = 0;
+  let replayCrystalPlan: CrystalMotionPlan | null = null;
 
   const stageName = computed(() => {
     if (!ready.value) return '準備中';
-    return ['第一階段：排隊', '第二階段：吹風前站位', '第三階段：等待吹風'][phase.value];
+    if (phase.value === 2) return review.value ? '第三階段：吹風結算' : '第三階段：吹風回放';
+    return ['第一階段：排隊', '第二階段：吹風前站位'][phase.value];
   });
   const stageBadge = computed(() => ready.value ? `階段 ${phase.value + 1}／3` : '準備階段');
   const clockText = computed(() => {
     if (!ready.value) return '⏸ WAITING';
+    if (windStep.value === 1) return '① 橫向吹風';
+    if (windStep.value === 2) return '② 縱向吹風';
+    if (review.value) return '✓ SETTLED';
     if (!settings.value.timed) return '∞ PRACTICE';
     return `${(elapsedMs.value / 1_000).toFixed(1)} / 5.0`;
   });
   const progress = computed(() => {
     if (!ready.value) return 0;
+    if (phase.value === 2) return review.value ? 100 : windStep.value === 2 ? 75 : 50;
     if (settings.value.timed) return Math.min(100, elapsedMs.value / STAGE_DURATION_MS * 100);
     return phase.value * 50;
   });
@@ -98,12 +140,23 @@ export function useKetudukeTrainer(options: KetudukeTrainerOptions = {}) {
   const displayPosition = computed<CellIndex | undefined>(() => {
     if (!focus.value) return undefined;
     if (phase.value === 0) return queue.value[focus.value];
+    if (phase.value === 2) return playerFinal.value?.[focus.value];
     return pre.value[focus.value] ?? queue.value[focus.value];
   });
   const visiblePositions = computed<PlayerPositions>(() => {
+    if (phase.value === 2 && review.value && playerFinal.value) return playerFinal.value;
     if (!focus.value || displayPosition.value === undefined) return {};
     return { [focus.value]: displayPosition.value };
   });
+  const visibleCrystals = computed<Crystal[]>(() =>
+    phase.value === 2 ? crystalFinal.value : question.value.crystals
+  );
+  const safeCells = computed<CellIndex[]>(() =>
+    review.value ? [...referenceSafeZones(question.value.center)] : []
+  );
+  const windEffects = computed(() =>
+    windStep.value ? windEffectsForStep(question.value, windStep.value) : []
+  );
   const mahjongRunHint = computed<MahjongRunHint | null>(() => {
     if (!ready.value || !mahVisible.value) return null;
     const bubbleRole = ROLES.find(role => question.value.buffs[role] === 'bubble');
@@ -121,12 +174,17 @@ export function useKetudukeTrainer(options: KetudukeTrainerOptions = {}) {
     && phase.value < 2
     && !(phase.value === 0 && hasChecked.value)
   );
-  const confirmText = computed(() => phase.value === 0 ? '確認排隊' : '確認站位');
-  const confirmDisabled = computed(() => !interactive.value || !focus.value);
+  const confirmText = computed(() =>
+    phase.value === 0 ? '確認排隊' : phase.value === 1 ? '確認站位' : replayActive.value ? '略過動畫' : '下一題'
+  );
+  const confirmDisabled = computed(() =>
+    phase.value === 2 ? !replayActive.value && !review.value : !interactive.value || !focus.value
+  );
   const nextDisabled = computed(() =>
     !ready.value || settings.value.timed || phase.value !== 0 || !hasChecked.value || mahVisible.value
   );
-  const resetDisabled = computed(() => !ready.value || lockPosition.value || phase.value === 2);
+  const resetDisabled = computed(() => !ready.value || (phase.value < 2 && lockPosition.value));
+  const resetText = computed(() => phase.value === 2 ? '重試本題' : '重設本階段');
 
   function cancelTimer(): void {
     timerGeneration += 1;
@@ -134,6 +192,125 @@ export function useKetudukeTrainer(options: KetudukeTrainerOptions = {}) {
       scheduler.clearTimeout(timerHandle);
       timerHandle = null;
     }
+  }
+
+  function cancelReplay(): void {
+    replayGeneration += 1;
+    for (const handle of replayHandles) scheduler.clearTimeout(handle);
+    replayHandles.clear();
+    replayActive.value = false;
+    windStep.value = null;
+    replayCrystalPlan = null;
+  }
+
+  function scheduleReplay(callback: () => void, delay: number, generation: number): void {
+    const handle = scheduler.setTimeout(() => {
+      replayHandles.delete(handle);
+      if (generation !== replayGeneration) return;
+      callback();
+    }, delay);
+    replayHandles.add(handle);
+  }
+
+  function clearResolution(): void {
+    cancelReplay();
+    playerFinal.value = null;
+    crystalFinal.value = [];
+    review.value = false;
+    settlement.value = null;
+  }
+
+  function finishSettlement(modelAvailable = true): void {
+    if (!focus.value || !playerFinal.value) return;
+    const hazards = hazardCells(crystalFinal.value);
+    const unsafeRoles = ROLES.filter(role => hazards.has(playerFinal.value![role]));
+    const geometry = validateCrystalGeometry(question.value, crystalFinal.value);
+    const group = groupCheck(question.value, playerFinal.value);
+    const personalPosition = playerFinal.value[focus.value];
+    const geometryOk = modelAvailable && geometry.ok;
+    const valid = geometryOk && unsafeRoles.length === 0 && group.ok;
+
+    replayActive.value = false;
+    windStep.value = null;
+    review.value = true;
+    if (valid) {
+      wins.value += 1;
+      streak.value += 1;
+    } else {
+      streak.value = 0;
+    }
+
+    const summary = valid
+      ? '水晶攻擊範圍與分組檢查通過。'
+      : !geometryOk
+        ? `水晶動畫模型未通過：${modelAvailable ? geometry.reason : '無法求得標準最終配置'}。本次不判定玩家死亡。`
+        : '模擬結算未通過安全區或分組檢查；本次不判定玩家死亡。';
+    settlement.value = {
+      personalPosition,
+      personalSafe: !hazards.has(personalPosition),
+      groupOk: group.ok,
+      groupDetail: group.detail,
+      geometryOk,
+      allPlayersSafe: unsafeRoles.length === 0,
+      valid,
+      summary,
+      limitation: '四顆水晶依①／②象限風向逐輪位移；若最終幾何不符合攻略八種安全區，會標示模型未通過且不判定玩家死亡，不會校正水晶座標。'
+    };
+    status.value = valid ? `✅ ② 吹風結算完成：${summary}` : `⚠️ ② 吹風結算完成：${summary}`;
+  }
+
+  function applyWindStep(step: WindStep): void {
+    if (!playerFinal.value || !replayCrystalPlan) return;
+    playerFinal.value = simulatePlayerWindStep(question.value, playerFinal.value, step);
+    crystalFinal.value = (step === 1 ? replayCrystalPlan.middle : replayCrystalPlan.target)
+      .map(crystal => ({ ...crystal }));
+  }
+
+  function completeReplayImmediately(): void {
+    if (!playerFinal.value || !replayCrystalPlan) return;
+    const plan = replayCrystalPlan;
+    cancelReplay();
+    playerFinal.value = simulatePlayerWindStep(
+      question.value,
+      simulatePlayerWindStep(question.value, pre.value as CompletePlayerPositions, 1),
+      2
+    );
+    crystalFinal.value = plan.target.map(crystal => ({ ...crystal }));
+    finishSettlement();
+  }
+
+  function beginWindReplay(solution: CompletePlayerPositions): void {
+    cancelReplay();
+    review.value = false;
+    settlement.value = null;
+    playerFinal.value = { ...solution };
+    crystalFinal.value = question.value.crystals.map(crystal => ({ ...crystal }));
+    replayCrystalPlan = crystalMotionPlan(question.value);
+    if (!replayCrystalPlan) {
+      playerFinal.value = simulatePlayerWindStep(
+        question.value,
+        simulatePlayerWindStep(question.value, solution, 1),
+        2
+      );
+      finishSettlement(false);
+      return;
+    }
+    if (!settings.value.showWind) {
+      completeReplayImmediately();
+      return;
+    }
+
+    replayActive.value = true;
+    windStep.value = 1;
+    status.value = '① 橫向吹風回放：泡泡角色與水晶開始移動。';
+    const generation = replayGeneration;
+    scheduleReplay(() => applyWindStep(1), WIND_ACTOR_START_DELAY_MS, generation);
+    scheduleReplay(() => {
+      windStep.value = 2;
+      status.value = '② 縱向吹風回放：從第一輪落點繼續移動。';
+      applyWindStep(2);
+    }, WIND_ROUND_DURATION_MS, generation);
+    scheduleReplay(finishSettlement, WIND_ROUND_DURATION_MS * 2, generation);
   }
 
   function startStageTimer(expectedPhase: 0 | 1): void {
@@ -211,8 +388,8 @@ export function useKetudukeTrainer(options: KetudukeTrainerOptions = {}) {
     preConfirmed.value = true;
     phase.value = 2;
     lockPosition.value = true;
-    status.value = '吹風前站位正確。吹風結算與動畫將於下一部分接入。';
     cancelTimer();
+    beginWindReplay(solution.pre);
     return true;
   }
 
@@ -266,6 +443,7 @@ export function useKetudukeTrainer(options: KetudukeTrainerOptions = {}) {
     if (lockPosition.value) return;
     focus.value = role;
     if (ready.value) {
+      clearResolution();
       queue.value = {};
       pre.value = {};
       mahVisible.value = false;
@@ -284,6 +462,7 @@ export function useKetudukeTrainer(options: KetudukeTrainerOptions = {}) {
   function start(): void {
     if (!focus.value || ready.value) return;
     cancelTimer();
+    clearResolution();
     ready.value = true;
     phase.value = 0;
     queue.value = {};
@@ -320,6 +499,8 @@ export function useKetudukeTrainer(options: KetudukeTrainerOptions = {}) {
     if (settleExpiredStage()) return;
     if (phase.value === 0) checkQueue();
     else if (phase.value === 1) checkPrePosition();
+    else if (phase.value === 2 && replayActive.value) completeReplayImmediately();
+    else if (phase.value === 2 && review.value) newQuestion();
   }
 
   function nextStep(): void {
@@ -330,6 +511,10 @@ export function useKetudukeTrainer(options: KetudukeTrainerOptions = {}) {
 
   function resetStage(): void {
     if (resetDisabled.value) return;
+    if (phase.value === 2) {
+      retry();
+      return;
+    }
     if (phase.value === 0) {
       queue.value = {};
       hasChecked.value = false;
@@ -343,6 +528,7 @@ export function useKetudukeTrainer(options: KetudukeTrainerOptions = {}) {
 
   function newQuestion(): void {
     cancelTimer();
+    clearResolution();
     question.value = questionFactory();
     round.value += 1;
     ready.value = false;
@@ -366,6 +552,7 @@ export function useKetudukeTrainer(options: KetudukeTrainerOptions = {}) {
 
   function retry(): void {
     cancelTimer();
+    clearResolution();
     ready.value = true;
     phase.value = 0;
     queue.value = {};
@@ -402,17 +589,23 @@ export function useKetudukeTrainer(options: KetudukeTrainerOptions = {}) {
 
   function setShowWind(value: boolean): void {
     settings.value = { ...settings.value, showWind: value };
+    if (!value && replayActive.value) completeReplayImmediately();
   }
 
-  if (getCurrentScope()) onScopeDispose(cancelTimer);
+  if (getCurrentScope()) onScopeDispose(() => {
+    cancelTimer();
+    cancelReplay();
+  });
 
   return {
     question, focus, ready, phase, round, wins, streak, hintVisible, settings, death, status,
     queue, pre, mahVisible, hasChecked, preConfirmed, lockPosition, elapsedMs,
+    playerFinal, crystalFinal, replayActive, windStep, review, settlement,
     stageStartedAtMs, stageDeadlineAtMs,
     queueStartedAtMs, queueDeadlineAtMs, preStartedAtMs, preDeadlineAtMs,
-    stageName, stageBadge, clockText, progress, displayPosition, visiblePositions, mahjongRunHint, interactive,
-    confirmText, confirmDisabled, nextDisabled, resetDisabled,
+    stageName, stageBadge, clockText, progress, displayPosition, visiblePositions, visibleCrystals,
+    safeCells, windEffects, mahjongRunHint, interactive,
+    confirmText, confirmDisabled, nextDisabled, resetDisabled, resetText,
     queueCells: computed(() => queueLine(question.value)),
     selectRole, start, selectCell, confirm, nextStep, resetStage, newQuestion, retry,
     closeDeath, toggleHint, setTimed, setShowWind

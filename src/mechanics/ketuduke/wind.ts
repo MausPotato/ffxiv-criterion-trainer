@@ -1,4 +1,4 @@
-import { clampGridCoordinate, quadrantOf, toCellIndex, toCoordinate } from '../../domain/grid.ts';
+import { clampGridCoordinate, toCellIndex, toCoordinate } from '../../domain/grid.ts';
 import { ROLES } from '../../domain/roles.ts';
 import type { CellIndex } from '../../domain/grid.ts';
 import type { CompletePlayerPositions, Crystal, KetudukeQuestion, WindStep } from './types.ts';
@@ -49,9 +49,9 @@ export function simulateCrystalWindStep(
   crystals: Crystal[],
   step: WindStep
 ): Crystal[] {
-  const fixed = quadrantOf(question.center.r, question.center.c);
+  const activeOrientation = step === 1 ? 'h' : 'v';
   return crystals.map(crystal => {
-    if (crystal.q === fixed) return { ...crystal };
+    if (crystal.o !== activeOrientation) return { ...crystal };
     const { r, c } = toCoordinate(
       pushAt(toCellIndex(crystal.r, crystal.c), step, question.rotation)
     );

@@ -4,17 +4,13 @@ import { ROLES } from '../../src/domain/roles.ts';
 import {
   autoQueue,
   candidatePrePositions,
-  canonicalCrystalFinal,
-  crystalMotionPlan,
   generateQuestion,
   groupCheck,
-  hazardCells,
   mahjongRegion,
   prePositionError,
   pushAt,
   queueError,
   solveParty,
-  validateCrystalGeometry,
   wantedMahjongRegion
 } from '../../src/mechanics/ketuduke/index.ts';
 import { createLegacyHarness } from '../helpers/legacy-harness.mjs';
@@ -44,11 +40,18 @@ function generatedPair(values) {
   return { harness, legacy, extracted };
 }
 
-test('question generation matches V4.5 for deterministic random sequences', async t => {
+test('question generation preserves V4.5 scenario metadata while filtering crystal layouts', async t => {
   for (const [index, values] of RANDOM_SEQUENCES.entries()) {
     await t.test(`sequence ${index + 1}`, () => {
       const { legacy, extracted } = generatedPair(values);
-      assert.deepEqual(extracted, legacy);
+      assert.deepEqual(extracted.center, legacy.center);
+      assert.equal(extracted.rotation, legacy.rotation);
+      assert.deepEqual(extracted.buffs, legacy.buffs);
+      assert.equal(extracted.party, legacy.party);
+      assert.deepEqual(
+        extracted.crystals.map(({ o, q }) => ({ o, q })),
+        legacy.crystals.map(({ o, q }) => ({ o, q }))
+      );
     });
   }
 });
@@ -92,29 +95,6 @@ test('wind displacement matches V4.5 for every cell, step, and rotation', () => 
         assert.equal(pushAt(cell, step, rotation), harness.api.pushAt(cell, step));
       }
     }
-  }
-});
-
-test('canonical crystal geometry and hazards match V4.5', async t => {
-  for (const [index, values] of RANDOM_SEQUENCES.entries()) {
-    await t.test(`question ${index + 1}`, () => {
-      const { harness, legacy, extracted } = generatedPair(values);
-      harness.api.setGame(legacy);
-      const legacyFinal = plain(harness.api.canonicalCrystalFinal());
-      const extractedFinal = canonicalCrystalFinal(extracted);
-      assert.deepEqual(extractedFinal, legacyFinal);
-      assert.ok(extractedFinal);
-
-      harness.api.setCrystalFinal(legacyFinal);
-      const extractedHazards = [...hazardCells(extractedFinal)].sort((a, b) => a - b);
-      assert.deepEqual(extractedHazards, [...harness.api.hazards()].sort((a, b) => a - b));
-      assert.deepEqual(
-        validateCrystalGeometry(extracted, extractedFinal),
-        plain(harness.api.validateCrystalGeometry())
-      );
-      harness.api.setCrystalFinal(legacy.crystals.map(crystal => ({ ...crystal })));
-      assert.deepEqual(crystalMotionPlan(extracted), plain(harness.api.crystalMotionPlan()));
-    });
   }
 });
 

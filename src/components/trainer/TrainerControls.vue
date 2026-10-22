@@ -56,7 +56,7 @@ defineEmits<{
         >
         <span>
           <strong>吹風位移動畫</strong>
-          <small>動畫將於下一部分接入</small>
+          <small>兩輪各約 5 秒；關閉時直接結算</small>
         </span>
       </label>
     </div>
