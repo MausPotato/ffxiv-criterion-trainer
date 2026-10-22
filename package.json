@@ -3,10 +3,19 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc --noEmit && vite build",
     "test": "node --test tests/golden/*.test.mjs tests/flow/*.test.mjs tests/compatibility/*.test.mjs",
-    "typecheck": "tsc -p tsconfig.json"
+    "typecheck": "vue-tsc --noEmit"
+  },
+  "dependencies": {
+    "vue": "^3.5.0",
+    "vue-router": "^4.5.0"
   },
   "devDependencies": {
-    "typescript": "5.9.3"
+    "@vitejs/plugin-vue": "^6.0.0",
+    "typescript": "5.9.3",
+    "vite": "^7.0.0",
+    "vue-tsc": "^3.0.0"
   }
 }
