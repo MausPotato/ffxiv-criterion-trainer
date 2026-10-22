@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { ROLES, type Role } from '../../domain/roles.ts';
 import type { KetudukeQuestion } from '../../mechanics/ketuduke/types.ts';
-import type { TrainerSettings } from '../../composables/useKetudukeTrainer.ts';
+import type {
+  MahjongRunHint,
+  TrainerSettings
+} from '../../composables/useKetudukeTrainer.ts';
 import MechanicIcon from './MechanicIcon.vue';
 
 defineProps<{
@@ -10,6 +13,8 @@ defineProps<{
   question: KetudukeQuestion;
   settings: TrainerSettings;
   hintVisible: boolean;
+  roleLocked: boolean;
+  mahjongRunHint: MahjongRunHint | null;
 }>();
 
 defineEmits<{
@@ -51,7 +56,7 @@ defineEmits<{
         >
         <span>
           <strong>吹風位移動畫</strong>
-          <small>本階段僅保留設定介面</small>
+          <small>動畫將於下一部分接入</small>
         </span>
       </label>
     </div>
@@ -68,6 +73,7 @@ defineEmits<{
         :class="{ selected: focus === role }"
         type="button"
         :aria-pressed="focus === role"
+        :disabled="roleLocked"
         @click="$emit('selectRole', role)"
       >
         <strong>{{ role }}</strong>
@@ -93,13 +99,38 @@ defineEmits<{
       <strong>{{ question.party === '分攤' ? '水瀑・分攤' : '水化彈・分散' }}</strong>
     </div>
 
+    <div v-if="mahjongRunHint" class="mahjong-run-hint" aria-live="polite">
+      <span class="mahjong-run-label">①／② 麻跑法</span>
+      <div v-if="mahjongRunHint.bubble === mahjongRunHint.bind" class="mahjong-run-route">
+        <strong>泡泡、止步</strong>
+        <span aria-hidden="true">→</span>
+        <b class="mahjong-run-destination" :class="`region-${mahjongRunHint.bubble}`">
+          {{ mahjongRunHint.bubble === 1 ? '① 麻' : '② 麻' }}
+        </b>
+      </div>
+      <div v-else class="mahjong-run-routes">
+        <span class="mahjong-run-route">
+          <strong>泡泡</strong><span aria-hidden="true">→</span>
+          <b class="mahjong-run-destination" :class="`region-${mahjongRunHint.bubble}`">
+            {{ mahjongRunHint.bubble === 1 ? '① 麻' : '② 麻' }}
+          </b>
+        </span>
+        <span class="mahjong-run-route">
+          <strong>止步</strong><span aria-hidden="true">→</span>
+          <b class="mahjong-run-destination" :class="`region-${mahjongRunHint.bind}`">
+            {{ mahjongRunHint.bind === 1 ? '① 麻' : '② 麻' }}
+          </b>
+        </span>
+      </div>
+    </div>
+
     <button class="secondary-button hint-button" type="button" @click="$emit('toggleHint')">
       {{ hintVisible ? '收起排隊法提示' : '查看排隊法提示' }}
     </button>
     <div v-if="hintVisible" class="hint-card">
       <strong>排隊法口訣</strong>
       <p>橫水晶排直列，直水晶排橫列；止步站兩側，泡泡站中間。</p>
-      <p>此處僅呈現 V4.5 已有說明，互動判定尚未接入。</p>
+      <p>麻將揭示後依①、②方向移動一格，再確認吹風前站位。</p>
     </div>
   </section>
 </template>

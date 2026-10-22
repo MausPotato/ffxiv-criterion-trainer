@@ -2,7 +2,8 @@
 import { computed } from 'vue';
 import type { CellIndex } from '../../domain/grid.ts';
 import { ROLES, type PartialRoleMap, type Role } from '../../domain/roles.ts';
-import type { KetudukeQuestion } from '../../mechanics/ketuduke/types.ts';
+import type { KetudukeQuestion, TrainerPhase } from '../../mechanics/ketuduke/types.ts';
+import { mahjongRegion } from '../../mechanics/ketuduke/queue.ts';
 import CrystalMarker from './CrystalMarker.vue';
 import RoleMarker from './RoleMarker.vue';
 
@@ -10,11 +11,16 @@ const props = defineProps<{
   question: KetudukeQuestion;
   ready: boolean;
   focus: Role | null;
+  mahVisible: boolean;
+  phase: TrainerPhase;
+  interactive: boolean;
+  queueCells: CellIndex[];
   positions?: PartialRoleMap<CellIndex>;
 }>();
 
 defineEmits<{
   start: [];
+  selectCell: [cell: CellIndex];
 }>();
 
 const cells = computed(() => Array.from({ length: 16 }, (_, index) => {
@@ -24,7 +30,8 @@ const cells = computed(() => Array.from({ length: 16 }, (_, index) => {
     ? props.question.crystals.find(item => item.r === r && item.c === c)
     : undefined;
   const roles = ROLES.filter(role => props.positions?.[role] === index);
-  return { index, r, c, crystal, roles };
+  const mahjong = props.mahVisible ? mahjongRegion(props.question, r, c) : undefined;
+  return { index, r, c, crystal, roles, mahjong };
 }));
 </script>
 
@@ -35,9 +42,11 @@ const cells = computed(() => Array.from({ length: 16 }, (_, index) => {
         v-for="cell in cells"
         :key="cell.index"
         class="arena-tile"
+        :class="{ 'queue-line': phase === 0 && queueCells.includes(cell.index), selected: cell.roles.length > 0 }"
         type="button"
         :aria-label="`第 ${cell.r + 1} 排第 ${cell.c + 1} 格`"
-        disabled
+        :disabled="!interactive"
+        @click="$emit('selectCell', cell.index)"
       >
         <CrystalMarker
           v-if="cell.crystal"
@@ -50,6 +59,9 @@ const cells = computed(() => Array.from({ length: 16 }, (_, index) => {
           :buff="question.buffs[role]"
           :active="role === focus"
         />
+        <span v-if="cell.mahjong" class="mahjong-marker" :class="`region-${cell.mahjong}`">
+          {{ cell.mahjong === 1 ? '① ↔' : '② ↕' }}
+        </span>
       </button>
     </div>
 
@@ -63,7 +75,7 @@ const cells = computed(() => Array.from({ length: 16 }, (_, index) => {
 
     <div v-else class="arena-caption">
       <span class="live-dot"></span>
-      題目已展開 · 棋盤操作將於下一階段接入
+      {{ phase === 0 ? '選擇排隊位置' : phase === 1 ? '選擇吹風前站位' : '吹風前站位已鎖定' }}
     </div>
   </div>
 </template>

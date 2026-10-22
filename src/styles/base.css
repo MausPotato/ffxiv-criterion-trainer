@@ -448,7 +448,8 @@ a {
   max-width: 100%;
   max-height: 100%;
   min-width: 0;
-  aspect-ratio: 1;
+  min-height: 0;
+  aspect-ratio: 1 / 1;
   place-items: center;
 }
 
@@ -456,8 +457,12 @@ a {
   display: grid;
   width: 100%;
   height: 100%;
+  min-width: 0;
+  min-height: 0;
   padding: 6px;
-  grid-template-columns: repeat(4, 1fr);
+  aspect-ratio: 1 / 1;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-rows: repeat(4, minmax(0, 1fr));
   gap: 3px;
   border: 5px solid #5f6f68;
   border-radius: 13px;
@@ -472,13 +477,40 @@ a {
 .arena-tile {
   position: relative;
   display: grid;
+  width: 100%;
+  height: 100%;
   min-width: 0;
+  min-height: 0;
   padding: 0;
   place-items: center;
   overflow: hidden;
   border: 1px solid #aaa37d;
   border-radius: 4px;
   background: linear-gradient(145deg, #566a61, #5b6150);
+  transition: border-color .15s ease, filter .15s ease, box-shadow .15s ease;
+}
+
+.arena-tile:disabled {
+  cursor: default;
+  opacity: 1;
+}
+
+.arena-tile:not(:disabled) {
+  cursor: pointer;
+}
+
+.arena-tile:not(:disabled):hover {
+  border-color: #8ce8f2;
+  filter: brightness(1.12);
+}
+
+.arena-tile.queue-line {
+  background: linear-gradient(145deg, #536f6b, #50665d);
+}
+
+.arena-tile.selected {
+  border-color: #f8e18f;
+  box-shadow: inset 0 0 0 2px rgba(255, 224, 117, .55);
 }
 
 .arena-tile::after {
@@ -486,6 +518,26 @@ a {
   inset: 17%;
   border: 2px solid rgba(182, 176, 147, .25);
   content: "";
+}
+
+.mahjong-marker {
+  position: absolute;
+  right: 7%;
+  bottom: 6%;
+  z-index: 3;
+  padding: 2px 5px;
+  border: 1px solid rgba(255, 255, 255, .38);
+  border-radius: 5px;
+  color: #fff5bf;
+  background: rgba(24, 38, 45, .82);
+  font-size: var(--type-body);
+  font-weight: 800;
+  line-height: var(--leading-compact);
+  text-shadow: 0 1px 2px #000;
+}
+
+.mahjong-marker.region-2 {
+  color: #bdeeff;
 }
 
 .crystal-marker {
@@ -513,7 +565,9 @@ a {
 }
 
 .role-marker {
-  position: relative;
+  position: absolute;
+  top: 50%;
+  left: 50%;
   z-index: 4;
   display: inline-flex;
   align-items: center;
@@ -524,6 +578,7 @@ a {
   color: white;
   background: rgba(13, 28, 40, .9);
   font-weight: 850;
+  transform: translate(-50%, -50%);
 }
 
 .role-marker.bubble { border-color: #5fd7ff; }
@@ -796,6 +851,57 @@ button:disabled {
 .mechanic-reveal .mechanic-icon {
   width: 21px;
   height: 28px;
+}
+
+.mahjong-run-hint {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 38px;
+  margin-top: 6px;
+  padding: 6px 10px;
+  border: 1px solid #c59a4d;
+  border-radius: 9px;
+  color: #f3f6f7;
+  background: linear-gradient(135deg, rgba(85, 60, 27, .92), rgba(35, 45, 50, .96));
+  box-shadow: inset 0 0 18px rgba(244, 191, 82, .08);
+  font-size: var(--type-body);
+  line-height: var(--leading-compact);
+}
+
+.mahjong-run-label {
+  color: #ffd77d;
+  font-weight: 850;
+  white-space: nowrap;
+}
+
+.mahjong-run-routes,
+.mahjong-run-route {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.mahjong-run-routes {
+  justify-content: flex-end;
+  gap: 16px;
+}
+
+.mahjong-run-destination {
+  padding: 3px 8px;
+  border: 1px solid #e5c86e;
+  border-radius: 999px;
+  color: #fff2ad;
+  background: rgba(66, 54, 22, .86);
+  font-size: var(--type-body);
+  white-space: nowrap;
+}
+
+.mahjong-run-destination.region-2 {
+  border-color: #71cbe3;
+  color: #bdecf7;
+  background: rgba(18, 66, 80, .86);
 }
 
 .hint-button {

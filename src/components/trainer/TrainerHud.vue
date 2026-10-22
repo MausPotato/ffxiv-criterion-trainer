@@ -6,6 +6,19 @@ defineProps<{
   stageName: string;
   status: string;
   ready: boolean;
+  stageBadge: string;
+  clockText: string;
+  progress: number;
+  confirmText: string;
+  confirmDisabled: boolean;
+  nextDisabled: boolean;
+  resetDisabled: boolean;
+}>();
+
+defineEmits<{
+  confirm: [];
+  next: [];
+  reset: [];
 }>();
 </script>
 
@@ -19,19 +32,19 @@ defineProps<{
 
     <div class="stage-card">
       <div class="stage-topline">
-        <span class="stage-pill">{{ ready ? '階段 1／3' : '準備階段' }}</span>
-        <span class="stage-clock">{{ ready ? 'BUFF 24.0' : '⏸ WAITING' }}</span>
+        <span class="stage-pill">{{ stageBadge }}</span>
+        <span class="stage-clock">{{ clockText }}</span>
       </div>
       <h2>{{ stageName }}</h2>
       <p>{{ status }}</p>
-      <div class="stage-progress"><span :style="{ width: ready ? '0%' : '0%' }"></span></div>
+      <div class="stage-progress"><span :style="{ width: `${progress}%` }"></span></div>
     </div>
 
     <div class="action-row">
-      <button class="primary-button" type="button" disabled>確認排隊</button>
-      <button class="secondary-button" type="button" disabled>下一步</button>
-      <button class="secondary-button" type="button" disabled>重設本階段</button>
+      <button class="primary-button" type="button" :disabled="confirmDisabled" @click="$emit('confirm')">{{ confirmText }}</button>
+      <button class="secondary-button" type="button" :disabled="nextDisabled" @click="$emit('next')">揭示麻將</button>
+      <button class="secondary-button" type="button" :disabled="resetDisabled" @click="$emit('reset')">重設本階段</button>
     </div>
-    <p class="phase-note">本階段完成靜態元件與狀態介面；棋盤點選、計時及結算尚未啟用。</p>
+    <p class="phase-note">吹風位移與最終安全區結算將於下一部分接入。</p>
   </section>
 </template>
