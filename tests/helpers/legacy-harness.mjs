@@ -213,10 +213,16 @@ function exposeLegacyInternals(script) {
   if (index === -1) throw new Error('Could not find the legacy IIFE terminator');
   const bridge = `
       globalThis.__legacyTestApi = {
-        ix, rc, quad, autoQueue, candidatePre, solveParty, pushAt, referenceSafe,
-        canonicalCrystalFinal, hazards, validateCrystalGeometry, begin, confirm,
-        reveal, reset,
+        ix, rc, quad, make, line, mah, wanted, autoQueue, candidatePre, queueError,
+        preError, solveParty,
+        pushAt, referenceSafe, canonicalCrystalFinal, hazards, validateCrystalGeometry,
+        crystalMotionPlan, groupCheck, begin, confirm, reveal, reset,
         setGame(value) { game = value; },
+        setFocus(value) { focus = value; },
+        setQueue(value) { queue = value; },
+        setPre(value) { pre = value; },
+        setPlayerFinal(value) { playerFinal = value; },
+        setCrystalFinal(value) { crystalFinal = value; },
         getGame() { return game; },
         getState() {
           return {

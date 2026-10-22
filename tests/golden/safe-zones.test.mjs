@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createLegacyHarness } from '../helpers/legacy-harness.mjs';
+import { referenceSafeZones } from '../../src/mechanics/ketuduke/safe-zones.ts';
 
 const cases = [
   { center: [1, 1, 'h'], safe: [0, 2, 12, 14] },
@@ -19,9 +20,12 @@ test('V4.5 golden safe zones: four center cells x two orientations', async t => 
   for (const { center: [r, c, o], safe } of cases) {
     await t.test(`center=(${r},${c}), orientation=${o}`, () => {
       api.setGame({ center: { r, c, o }, crystals: [], buffs: {}, party: '分散', rotation: 'cw' });
-      const actual = [...api.referenceSafe()].sort((a, b) => a - b);
-      assert.deepEqual(actual, safe);
-      assert.equal(actual.length, 4);
+      const legacy = [...api.referenceSafe()].sort((a, b) => a - b);
+      const extracted = [...referenceSafeZones({ r, c, o })].sort((a, b) => a - b);
+      assert.deepEqual(legacy, safe);
+      assert.deepEqual(extracted, safe);
+      assert.deepEqual(extracted, legacy);
+      assert.equal(extracted.length, 4);
     });
   }
 });

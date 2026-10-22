@@ -1,0 +1,12 @@
+{
+  "name": "ffxiv-criterion-trainer",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests/golden/*.test.mjs tests/flow/*.test.mjs tests/compatibility/*.test.mjs",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "devDependencies": {
+    "typescript": "5.9.3"
+  }
+}
