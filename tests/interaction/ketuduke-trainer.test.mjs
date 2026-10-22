@@ -6,7 +6,14 @@ import { autoQueue } from '../../src/mechanics/ketuduke/queue.ts';
 import { solveParty } from '../../src/mechanics/ketuduke/solver.ts';
 import { crystalMotionPlan } from '../../src/mechanics/ketuduke/crystals.ts';
 import { generateQuestion } from '../../src/mechanics/ketuduke/generation.ts';
+import { referenceSafeZones } from '../../src/mechanics/ketuduke/safe-zones.ts';
 import { simulatePlayerWindStep } from '../../src/mechanics/ketuduke/wind.ts';
+import {
+  WIND_ACTOR_START_DELAY_MS,
+  WIND_MOVE_DURATION_MS,
+  WIND_REPLAY_DURATION_MS,
+  WIND_ROUND_DURATION_MS
+} from '../../src/presentation/ketuduke/wind-effects.ts';
 
 const FIXED_QUESTION = {
   center: { r: 1, c: 1, o: 'h' },
@@ -24,6 +31,11 @@ const FIXED_QUESTION = {
 const STACK_QUESTION = {
   ...FIXED_QUESTION,
   party: '分攤'
+};
+
+const DD_BUBBLE_QUESTION = {
+  ...FIXED_QUESTION,
+  buffs: { MT: 'bind', H: 'bind', D1: 'bubble', D2: 'bubble' }
 };
 
 const UNSOLVABLE_CRYSTAL_QUESTION = {
@@ -179,10 +191,10 @@ test('correct queue at 4.9 seconds passes, remains visible, and pre-position at 
   assert.equal(trainer.wins.value, 0, 'wins are awarded only after wind resolution');
   assert.equal(trainer.replayActive.value, true);
   assert.equal(trainer.windStep.value, 1);
-  assert.equal(scheduler.tasks.size, 3);
+  assert.equal(scheduler.tasks.size, 2, 'the zero-delay first movement has started; two replay boundaries remain');
 });
 
-test('enabled wind replay animates two five-second rounds and settles matching final positions', () => {
+test('enabled wind replay animates two movement-and-hold rounds and settles matching final positions', () => {
   const { trainer, scheduler } = createTrainer();
   const plan = crystalMotionPlan(FIXED_QUESTION);
   assert.ok(plan);
@@ -192,12 +204,19 @@ test('enabled wind replay animates two five-second rounds and settles matching f
   assert.equal(trainer.replayActive.value, true);
   assert.equal(trainer.windStep.value, 1);
   assert.equal(trainer.review.value, false);
+  assert.deepEqual(trainer.mahjongCues.value, [], 'mahjong dots disappear when wind replay starts');
   assert.equal(trainer.windEffects.value.length, 2);
-  assert.ok(trainer.windEffects.value.every(effect => effect.region === 1 && effect.durationMs === 5_000));
+  assert.ok(trainer.windEffects.value.every(
+    effect => effect.region === 1 && effect.durationMs === WIND_ROUND_DURATION_MS
+  ));
   assert.deepEqual(trainer.playerFinal.value, solution.pre);
-  assert.deepEqual(Object.keys(trainer.visiblePositions.value), ['MT'], 'teammates stay hidden during replay');
+  assert.deepEqual(
+    trainer.visiblePositions.value,
+    solution.pre,
+    'all teammates appear at their pre-wind positions once the answer passes'
+  );
 
-  scheduler.advanceTo(50);
+  scheduler.advanceTo(WIND_ACTOR_START_DELAY_MS);
   const afterFirst = simulatePlayerWindStep(FIXED_QUESTION, solution.pre, 1);
   assert.deepEqual(trainer.playerFinal.value, afterFirst);
   assert.deepEqual(trainer.crystalFinal.value, plan.middle);
@@ -205,23 +224,31 @@ test('enabled wind replay animates two five-second rounds and settles matching f
   assert.equal(afterFirst.D1, solution.pre.D1, 'bind players do not move');
   assert.equal(afterFirst.D2, solution.pre.D2, 'bind players do not move');
 
-  scheduler.advanceTo(4_999);
+  scheduler.advanceTo(WIND_MOVE_DURATION_MS);
+  assert.equal(trainer.windStep.value, 1, 'the first endpoint remains visible during its hold');
+  assert.deepEqual(trainer.playerFinal.value, afterFirst);
+  scheduler.advanceTo(WIND_ROUND_DURATION_MS - 1);
   assert.equal(trainer.windStep.value, 1);
-  scheduler.advanceTo(5_000);
+  scheduler.advanceTo(WIND_ROUND_DURATION_MS);
   assert.equal(trainer.windStep.value, 2);
   assert.equal(trainer.windEffects.value.length, 2);
-  assert.ok(trainer.windEffects.value.every(effect => effect.region === 2 && effect.durationMs === 5_000));
+  assert.ok(trainer.windEffects.value.every(
+    effect => effect.region === 2 && effect.durationMs === WIND_ROUND_DURATION_MS
+  ));
   assert.deepEqual(trainer.playerFinal.value, solution.final);
   assert.deepEqual(trainer.crystalFinal.value, plan.target);
 
-  scheduler.advanceTo(9_999);
+  scheduler.advanceTo(WIND_ROUND_DURATION_MS + WIND_MOVE_DURATION_MS);
+  assert.equal(trainer.windStep.value, 2, 'the second endpoint remains visible during its hold');
+  scheduler.advanceTo(WIND_REPLAY_DURATION_MS - 1);
   assert.equal(trainer.review.value, false);
-  scheduler.advanceTo(10_000);
+  scheduler.advanceTo(WIND_REPLAY_DURATION_MS);
   assert.equal(trainer.replayActive.value, false);
   assert.equal(trainer.review.value, true);
   assert.equal(trainer.windStep.value, null);
   assert.deepEqual(trainer.windEffects.value, []);
-  assert.deepEqual(trainer.visiblePositions.value, solution.final, 'the party appears only at settlement');
+  assert.deepEqual(trainer.mahjongCues.value, [], 'settlement keeps mahjong dots removed');
+  assert.deepEqual(trainer.visiblePositions.value, solution.final);
   assert.equal(trainer.settlement.value?.personalPosition, solution.final.MT);
   assert.equal(trainer.settlement.value?.groupOk, true);
   assert.equal(trainer.settlement.value?.allPlayersSafe, true);
@@ -247,22 +274,27 @@ test('all eight configurations replay initial, first-round, and final crystal po
           assert.equal(trainer.windStep.value, 1);
           assert.equal(trainer.windEffects.value.length, 2);
 
-          scheduler.advanceTo(50);
+          scheduler.advanceTo(WIND_ACTOR_START_DELAY_MS);
           assert.deepEqual(trainer.crystalFinal.value, plan.middle);
           assert.equal(new Set(plan.middle.map(crystal => `${crystal.r},${crystal.c}`)).size, 4);
 
-          scheduler.advanceTo(5_000);
+          scheduler.advanceTo(WIND_ROUND_DURATION_MS);
           assert.equal(trainer.windStep.value, 2);
           assert.deepEqual(trainer.crystalFinal.value, plan.target);
           assert.deepEqual(trainer.playerFinal.value, solution.final);
           assert.equal(new Set(plan.target.map(crystal => `${crystal.r},${crystal.c}`)).size, 4);
           const animatedEndpoint = trainer.crystalFinal.value.map(crystal => ({ ...crystal }));
 
-          scheduler.advanceTo(10_000);
+          scheduler.advanceTo(WIND_REPLAY_DURATION_MS);
           assert.deepEqual(trainer.crystalFinal.value, animatedEndpoint);
           assert.equal(trainer.review.value, true);
           assert.equal(trainer.settlement.value?.geometryOk, true);
           assert.equal(trainer.settlement.value?.allPlayersSafe, true);
+          assert.deepEqual(trainer.safeCells.value.slice().sort((a, b) => a - b), [...referenceSafeZones(question.center)].sort((a, b) => a - b));
+          assert.equal(trainer.safeCells.value.length, 4);
+          assert.equal(trainer.hazardCells.value.length, 12);
+          assert.equal(new Set([...trainer.safeCells.value, ...trainer.hazardCells.value]).size, 16);
+          assert.ok(trainer.safeCells.value.every(cell => !trainer.hazardCells.value.includes(cell)));
           assert.equal(scheduler.tasks.size, 0);
         });
       }
@@ -317,7 +349,7 @@ test('an unavailable crystal animation model reports a warning without killing t
 test('switching questions during wind replay clears stale role, crystal, and animation callbacks', () => {
   const { trainer, scheduler } = createTrainer();
   completeUntimedPositioning(trainer);
-  scheduler.advanceTo(50);
+  scheduler.advanceTo(WIND_ACTOR_START_DELAY_MS);
   assert.equal(trainer.replayActive.value, true);
   assert.ok(trainer.playerFinal.value);
   assert.equal(trainer.crystalFinal.value.length, 4);
@@ -340,7 +372,7 @@ test('switching questions during wind replay clears stale role, crystal, and ani
 test('retrying during wind replay clears the replay and starts the same question cleanly', () => {
   const { trainer, scheduler } = createTrainer();
   completeUntimedPositioning(trainer);
-  scheduler.advanceTo(50);
+  scheduler.advanceTo(WIND_ACTOR_START_DELAY_MS);
 
   trainer.retry();
 
@@ -378,7 +410,7 @@ test('disposing the trainer scope clears every replay callback', () => {
 test('turning off wind animation during replay cancels callbacks and settles without a death', () => {
   const { trainer, scheduler } = createTrainer();
   const solution = completeUntimedPositioning(trainer);
-  scheduler.advanceTo(50);
+  scheduler.advanceTo(WIND_ACTOR_START_DELAY_MS);
 
   trainer.setShowWind(false);
 
@@ -477,24 +509,36 @@ test('late input cannot overwrite the locked queue answer during the second stag
   assert.equal(scheduler.tasks.size, 0);
 });
 
-test('mahjong run hint appears only after reveal and follows the spread mechanic regions', () => {
+test('party mechanic and mahjong run hint stay hidden until phase two, then reset on retry and new question', () => {
   const { trainer, scheduler } = createTrainer();
 
   assert.equal(trainer.mahjongRunHint.value, null);
+  assert.equal(trainer.mechanicRevealed.value, false);
+  assert.deepEqual(trainer.mahjongCues.value, []);
   trainer.start();
   assert.equal(trainer.mahjongRunHint.value, null, 'the queue phase must not show a run hint');
+  assert.equal(trainer.mechanicRevealed.value, false, 'the queue phase must not reveal stack or spread');
+  assert.deepEqual(trainer.mahjongCues.value, [], 'the queue phase must not reveal mahjong dots');
 
   trainer.selectCell(autoQueue(FIXED_QUESTION).MT);
   scheduler.advanceTo(5_000);
-  assert.deepEqual(trainer.mahjongRunHint.value, { bubble: 1, bind: 2 });
+  assert.equal(trainer.mechanicRevealed.value, true);
+  assert.equal(trainer.mahjongCues.value.length, 4);
+  assert.deepEqual(trainer.mahjongRunHint.value, {
+    routes: [{ group: '坦補', region: 1 }, { group: 'DD', region: 2 }]
+  });
 
   trainer.retry();
   assert.equal(trainer.mahjongRunHint.value, null, 'retry resets to a new queue window');
+  assert.equal(trainer.mechanicRevealed.value, false);
+  assert.deepEqual(trainer.mahjongCues.value, []);
   trainer.newQuestion();
   assert.equal(trainer.mahjongRunHint.value, null, 'a new question resets the reveal hint');
+  assert.equal(trainer.mechanicRevealed.value, false);
+  assert.deepEqual(trainer.mahjongCues.value, []);
 });
 
-test('waterfall mechanic sends both bubble and bind players to region one', () => {
+test('waterfall mechanic shows the whole party going to region one', () => {
   const { trainer, scheduler } = createTrainer(STACK_QUESTION);
   trainer.start();
 
@@ -502,7 +546,20 @@ test('waterfall mechanic sends both bubble and bind players to region one', () =
   trainer.selectCell(autoQueue(STACK_QUESTION).MT);
   scheduler.advanceTo(5_000);
 
-  assert.deepEqual(trainer.mahjongRunHint.value, { bubble: 1, bind: 1 });
+  assert.deepEqual(trainer.mahjongRunHint.value, {
+    routes: [{ group: '全體', region: 1 }]
+  });
+});
+
+test('spread route labels follow which role group has bubbles', () => {
+  const { trainer, scheduler } = createTrainer(DD_BUBBLE_QUESTION);
+  trainer.start();
+  trainer.selectCell(autoQueue(DD_BUBBLE_QUESTION).MT);
+  scheduler.advanceTo(5_000);
+
+  assert.deepEqual(trainer.mahjongRunHint.value, {
+    routes: [{ group: 'DD', region: 1 }, { group: '坦補', region: 2 }]
+  });
 });
 
 test('timeout, retry, and new question leave no stale timer callbacks', () => {
@@ -569,7 +626,9 @@ test('non-timed mode supports queue and pre-position practice without a deadline
   assert.equal(trainer.phase.value, 0);
   trainer.nextStep();
   assert.equal(trainer.phase.value, 1);
-  assert.deepEqual(trainer.mahjongRunHint.value, { bubble: 1, bind: 2 });
+  assert.deepEqual(trainer.mahjongRunHint.value, {
+    routes: [{ group: '坦補', region: 1 }, { group: 'DD', region: 2 }]
+  });
 
   trainer.selectCell(solution.pre.MT);
   trainer.confirm();

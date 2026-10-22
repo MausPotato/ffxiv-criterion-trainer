@@ -1,19 +1,20 @@
 import { computed, getCurrentScope, onScopeDispose, ref } from 'vue';
-import type { CellIndex } from '../domain/grid.ts';
+import { GRID_SIZE, type CellIndex } from '../domain/grid.ts';
 import { ROLES, type Role } from '../domain/roles.ts';
 import { generateQuestion } from '../mechanics/ketuduke/generation.ts';
-import { autoQueue, queueError, queueLine, wantedMahjongRegion } from '../mechanics/ketuduke/queue.ts';
+import { autoQueue, queueError, queueLine } from '../mechanics/ketuduke/queue.ts';
 import { groupCheck, prePositionError, solveParty } from '../mechanics/ketuduke/solver.ts';
 import {
   crystalMotionPlan,
-  hazardCells,
+  hazardCells as crystalHazardCells,
   validateCrystalGeometry
 } from '../mechanics/ketuduke/crystals.ts';
-import { referenceSafeZones } from '../mechanics/ketuduke/safe-zones.ts';
 import { simulatePlayerWindStep } from '../mechanics/ketuduke/wind.ts';
 import {
   WIND_ACTOR_START_DELAY_MS,
+  WIND_REPLAY_DURATION_MS,
   WIND_ROUND_DURATION_MS,
+  quadrantWindCues,
   windEffectsForStep
 } from '../presentation/ketuduke/wind-effects.ts';
 import type {
@@ -51,9 +52,13 @@ export interface KetudukeTrainerOptions {
   questionFactory?: () => KetudukeQuestion;
 }
 
+export interface MahjongRunRoute {
+  group: '全體' | '坦補' | 'DD';
+  region: MahjongRegion;
+}
+
 export interface MahjongRunHint {
-  bubble: MahjongRegion;
-  bind: MahjongRegion;
+  routes: MahjongRunRoute[];
 }
 
 export interface SettlementState {
@@ -144,29 +149,40 @@ export function useKetudukeTrainer(options: KetudukeTrainerOptions = {}) {
     return pre.value[focus.value] ?? queue.value[focus.value];
   });
   const visiblePositions = computed<PlayerPositions>(() => {
-    if (phase.value === 2 && review.value && playerFinal.value) return playerFinal.value;
+    if (phase.value === 2 && playerFinal.value) return playerFinal.value;
     if (!focus.value || displayPosition.value === undefined) return {};
     return { [focus.value]: displayPosition.value };
   });
   const visibleCrystals = computed<Crystal[]>(() =>
     phase.value === 2 ? crystalFinal.value : question.value.crystals
   );
-  const safeCells = computed<CellIndex[]>(() =>
-    review.value ? [...referenceSafeZones(question.value.center)] : []
+  const hazardCells = computed<CellIndex[]>(() =>
+    review.value ? [...crystalHazardCells(crystalFinal.value)] : []
   );
+  const safeCells = computed<CellIndex[]>(() => {
+    if (!review.value) return [];
+    const hazards = new Set(hazardCells.value);
+    return Array.from({ length: GRID_SIZE * GRID_SIZE }, (_, cell) => cell)
+      .filter(cell => !hazards.has(cell));
+  });
   const windEffects = computed(() =>
     windStep.value ? windEffectsForStep(question.value, windStep.value) : []
   );
+  const mahjongCues = computed(() =>
+    phase.value === 1 && mahVisible.value ? quadrantWindCues(question.value) : []
+  );
   const mahjongRunHint = computed<MahjongRunHint | null>(() => {
     if (!ready.value || !mahVisible.value) return null;
-    const bubbleRole = ROLES.find(role => question.value.buffs[role] === 'bubble');
-    const bindRole = ROLES.find(role => question.value.buffs[role] === 'bind');
-    if (!bubbleRole || !bindRole) return null;
-    return {
-      bubble: wantedMahjongRegion(question.value, bubbleRole),
-      bind: wantedMahjongRegion(question.value, bindRole)
-    };
+    if (question.value.party === '分攤') {
+      return { routes: [{ group: '全體', region: 1 }] };
+    }
+    const tankHealerBubble = question.value.buffs.MT === 'bubble'
+      && question.value.buffs.H === 'bubble';
+    return tankHealerBubble
+      ? { routes: [{ group: '坦補', region: 1 }, { group: 'DD', region: 2 }] }
+      : { routes: [{ group: 'DD', region: 1 }, { group: '坦補', region: 2 }] };
   });
+  const mechanicRevealed = computed(() => ready.value && mahVisible.value);
   const interactive = computed(() =>
     ready.value
     && !death.value.open
@@ -222,7 +238,7 @@ export function useKetudukeTrainer(options: KetudukeTrainerOptions = {}) {
 
   function finishSettlement(modelAvailable = true): void {
     if (!focus.value || !playerFinal.value) return;
-    const hazards = hazardCells(crystalFinal.value);
+    const hazards = crystalHazardCells(crystalFinal.value);
     const unsafeRoles = ROLES.filter(role => hazards.has(playerFinal.value![role]));
     const geometry = validateCrystalGeometry(question.value, crystalFinal.value);
     const group = groupCheck(question.value, playerFinal.value);
@@ -310,7 +326,7 @@ export function useKetudukeTrainer(options: KetudukeTrainerOptions = {}) {
       status.value = '② 縱向吹風回放：從第一輪落點繼續移動。';
       applyWindStep(2);
     }, WIND_ROUND_DURATION_MS, generation);
-    scheduleReplay(finishSettlement, WIND_ROUND_DURATION_MS * 2, generation);
+    scheduleReplay(finishSettlement, WIND_REPLAY_DURATION_MS, generation);
   }
 
   function startStageTimer(expectedPhase: 0 | 1): void {
@@ -604,7 +620,7 @@ export function useKetudukeTrainer(options: KetudukeTrainerOptions = {}) {
     stageStartedAtMs, stageDeadlineAtMs,
     queueStartedAtMs, queueDeadlineAtMs, preStartedAtMs, preDeadlineAtMs,
     stageName, stageBadge, clockText, progress, displayPosition, visiblePositions, visibleCrystals,
-    safeCells, windEffects, mahjongRunHint, interactive,
+    safeCells, hazardCells, windEffects, mahjongCues, mahjongRunHint, mechanicRevealed, interactive,
     confirmText, confirmDisabled, nextDisabled, resetDisabled, resetText,
     queueCells: computed(() => queueLine(question.value)),
     selectRole, start, selectCell, confirm, nextStep, resetStage, newQuestion, retry,

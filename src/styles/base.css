@@ -518,12 +518,18 @@ a {
 
 .arena-tile.safe {
   border-color: rgba(108, 232, 174, .9);
-  background: linear-gradient(145deg, #3d7665, #365d53);
+  background:
+    linear-gradient(rgba(43, 196, 126, .34), rgba(43, 196, 126, .34)),
+    linear-gradient(145deg, #566a61, #5b6150);
   box-shadow: inset 0 0 18px rgba(65, 220, 155, .2);
 }
 
 .arena-tile.hazard {
-  filter: saturate(.65) brightness(.72);
+  border-color: rgba(241, 94, 114, .62);
+  background:
+    linear-gradient(rgba(190, 45, 65, .38), rgba(190, 45, 65, .38)),
+    linear-gradient(145deg, #566a61, #5b6150);
+  box-shadow: inset 0 0 16px rgba(218, 47, 70, .2);
 }
 
 .arena-tile::after {
@@ -533,24 +539,144 @@ a {
   content: "";
 }
 
-.mahjong-marker {
+.board-wind-cue-layer,
+.board-mahjong-layer {
   position: absolute;
-  right: 7%;
-  bottom: 6%;
-  z-index: 3;
-  padding: 2px 5px;
-  border: 1px solid rgba(255, 255, 255, .38);
-  border-radius: 5px;
-  color: #fff5bf;
-  background: rgba(24, 38, 45, .82);
-  font-size: var(--type-body);
-  font-weight: 800;
-  line-height: var(--leading-compact);
-  text-shadow: 0 1px 2px #000;
+  inset: 6px;
+  overflow: hidden;
+  pointer-events: none !important;
 }
 
-.mahjong-marker.region-2 {
-  color: #bdeeff;
+.board-wind-cue-layer {
+  z-index: 3;
+}
+
+.board-mahjong-layer {
+  z-index: 5;
+}
+
+.quadrant-wind-cue,
+.mahjong-quadrant-marker {
+  position: absolute;
+  width: 50%;
+  height: 50%;
+}
+
+.quadrant-wind-cue.quadrant-0,
+.mahjong-quadrant-marker.quadrant-0 { top: 0; left: 0; }
+.quadrant-wind-cue.quadrant-1,
+.mahjong-quadrant-marker.quadrant-1 { top: 0; left: 50%; }
+.quadrant-wind-cue.quadrant-2,
+.mahjong-quadrant-marker.quadrant-2 { top: 50%; left: 0; }
+.quadrant-wind-cue.quadrant-3,
+.mahjong-quadrant-marker.quadrant-3 { top: 50%; left: 50%; }
+
+.quadrant-wind-cue {
+  overflow: hidden;
+  background: rgba(26, 173, 112, .055);
+}
+
+.quadrant-wind-cue::before {
+  position: absolute;
+  content: "";
+  opacity: .88;
+  will-change: transform;
+  animation-duration: 1.6s;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+.quadrant-wind-cue.wind-right::before,
+.quadrant-wind-cue.wind-left::before {
+  top: 0;
+  width: 200%;
+  height: 100%;
+  background:
+    linear-gradient(90deg, transparent 0 8%, rgba(72, 210, 158, .16) 20%, rgba(147, 255, 211, .5) 38%, rgba(61, 210, 153, .2) 56%, transparent 72% 100%);
+  background-size: 50% 100%;
+}
+
+.quadrant-wind-cue.wind-up::before,
+.quadrant-wind-cue.wind-down::before {
+  left: 0;
+  width: 100%;
+  height: 200%;
+  background:
+    linear-gradient(180deg, transparent 0 8%, rgba(72, 210, 158, .16) 20%, rgba(147, 255, 211, .5) 38%, rgba(61, 210, 153, .2) 56%, transparent 72% 100%);
+  background-size: 100% 50%;
+}
+
+.quadrant-wind-cue.wind-right::before {
+  left: -100%;
+  animation-name: quadrant-cue-right;
+}
+
+.quadrant-wind-cue.wind-left::before {
+  left: 0;
+  animation-name: quadrant-cue-left;
+}
+
+.quadrant-wind-cue.wind-down::before {
+  top: -100%;
+  animation-name: quadrant-cue-down;
+}
+
+.quadrant-wind-cue.wind-up::before {
+  top: 0;
+  animation-name: quadrant-cue-up;
+}
+
+.mahjong-quadrant-marker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+@keyframes quadrant-cue-right {
+  from { transform: translateX(0); }
+  to { transform: translateX(50%); }
+}
+
+@keyframes quadrant-cue-left {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+@keyframes quadrant-cue-down {
+  from { transform: translateY(0); }
+  to { transform: translateY(50%); }
+}
+
+@keyframes quadrant-cue-up {
+  from { transform: translateY(0); }
+  to { transform: translateY(-50%); }
+}
+
+.mahjong-dot {
+  width: clamp(10px, 2cqw, 16px);
+  height: clamp(10px, 2cqw, 16px);
+  border: 2px solid rgba(235, 250, 255, .92);
+  border-radius: 50%;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, .8), 0 0 9px currentColor;
+}
+
+.mahjong-quadrant-marker.region-1 .mahjong-dot {
+  color: #48bfff;
+  background: radial-gradient(circle at 34% 28%, #f2fdff 0 8%, #6fd8ff 20%, #168ed1 58%, #064f9d 100%);
+  box-shadow:
+    0 1px 4px rgba(0, 0, 0, .8),
+    0 0 7px #a2e9ff,
+    0 0 16px rgba(38, 173, 255, .92);
+}
+
+.mahjong-quadrant-marker.region-2 .mahjong-dot {
+  color: #ff6875;
+  background: radial-gradient(circle at 34% 28%, #fff1f3 0 8%, #ff8993 20%, #df3548 58%, #8b1528 100%);
+  box-shadow:
+    0 1px 4px rgba(0, 0, 0, .8),
+    0 0 7px #ffb0b7,
+    0 0 16px rgba(255, 61, 83, .9);
 }
 
 .crystal-marker {
@@ -580,7 +706,7 @@ a {
 .board-actor-layer {
   position: absolute;
   inset: 6px;
-  z-index: 5;
+  z-index: 6;
   overflow: hidden;
   pointer-events: none;
 }
@@ -595,6 +721,10 @@ a {
 
 .board-wind-layer,
 .board-wind-layer *,
+.board-wind-cue-layer,
+.board-wind-cue-layer *,
+.board-mahjong-layer,
+.board-mahjong-layer *,
 .board-actor-layer,
 .board-actor-layer *,
 .arena-caption {
@@ -606,7 +736,7 @@ a {
   width: 50%;
   height: 50%;
   overflow: hidden;
-  background: rgba(36, 188, 151, .07);
+  animation: quadrant-wind-fade var(--wind-hold-duration) linear var(--wind-move-duration) forwards;
 }
 
 .quadrant-wind-effect.quadrant-0 { top: 0; left: 0; }
@@ -616,42 +746,30 @@ a {
 
 .quadrant-wind-effect .wind-sweep {
   position: absolute;
+  inset: 0;
   display: block;
-  background-color: rgba(50, 211, 174, .13);
-  background-image: repeating-linear-gradient(
-    90deg,
-    transparent 0,
-    rgba(116, 244, 213, .08) 12%,
-    rgba(74, 224, 190, .55) 48%,
-    rgba(143, 255, 228, .14) 72%,
-    transparent 100%
-  );
-  filter: blur(1px);
-  animation-duration: var(--wind-round-duration, 5000ms);
+  width: 100%;
+  height: 100%;
+  filter: blur(.5px);
+  animation-duration: var(--wind-move-duration);
   animation-timing-function: linear;
   animation-fill-mode: both;
 }
 
-.quadrant-wind-effect.wind-left .wind-sweep,
 .quadrant-wind-effect.wind-right .wind-sweep {
-  top: 0;
-  bottom: 0;
-  width: 85%;
+  background: linear-gradient(90deg, transparent 0%, rgba(66, 204, 159, .2) 24%, rgba(124, 255, 208, .68) 78%, rgba(181, 255, 226, .82) 100%);
 }
 
-.quadrant-wind-effect.wind-up .wind-sweep,
+.quadrant-wind-effect.wind-left .wind-sweep {
+  background: linear-gradient(270deg, transparent 0%, rgba(66, 204, 159, .2) 24%, rgba(124, 255, 208, .68) 78%, rgba(181, 255, 226, .82) 100%);
+}
+
 .quadrant-wind-effect.wind-down .wind-sweep {
-  right: 0;
-  left: 0;
-  height: 85%;
-  background-image: repeating-linear-gradient(
-    180deg,
-    transparent 0,
-    rgba(116, 244, 213, .08) 12%,
-    rgba(74, 224, 190, .55) 48%,
-    rgba(143, 255, 228, .14) 72%,
-    transparent 100%
-  );
+  background: linear-gradient(180deg, transparent 0%, rgba(66, 204, 159, .2) 24%, rgba(124, 255, 208, .68) 78%, rgba(181, 255, 226, .82) 100%);
+}
+
+.quadrant-wind-effect.wind-up .wind-sweep {
+  background: linear-gradient(0deg, transparent 0%, rgba(66, 204, 159, .2) 24%, rgba(124, 255, 208, .68) 78%, rgba(181, 255, 226, .82) 100%);
 }
 
 .quadrant-wind-effect.wind-right .wind-sweep { animation-name: quadrant-wind-right; }
@@ -660,23 +778,28 @@ a {
 .quadrant-wind-effect.wind-up .wind-sweep { animation-name: quadrant-wind-up; }
 
 @keyframes quadrant-wind-right {
-  from { left: -85%; }
-  to { left: 100%; }
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
 }
 
 @keyframes quadrant-wind-left {
-  from { right: -85%; }
-  to { right: 100%; }
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
 }
 
 @keyframes quadrant-wind-down {
-  from { top: -85%; }
-  to { top: 100%; }
+  from { transform: translateY(-100%); }
+  to { transform: translateY(0); }
 }
 
 @keyframes quadrant-wind-up {
-  from { bottom: -85%; }
-  to { bottom: 100%; }
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+@keyframes quadrant-wind-fade {
+  from { opacity: 1; }
+  to { opacity: 0; }
 }
 
 .board-actor {
@@ -692,7 +815,7 @@ a {
 }
 
 .board-actor-layer.animating .board-actor {
-  transition: transform var(--actor-move-duration, 4950ms) linear;
+  transition: transform var(--actor-move-duration) linear;
   will-change: transform;
 }
 
@@ -855,6 +978,12 @@ button:disabled {
   padding: 12px;
   overflow-x: hidden;
   overflow-y: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.control-panel::-webkit-scrollbar {
+  display: none;
 }
 
 .control-section-heading h2,

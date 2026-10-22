@@ -4,9 +4,12 @@ import { toCellIndex, toCoordinate, type CellIndex } from '../../domain/grid.ts'
 import { formatGridCoordinate } from '../../domain/grid-coordinate-format.ts';
 import { ROLES, type PartialRoleMap, type Role } from '../../domain/roles.ts';
 import type { Crystal, KetudukeQuestion, TrainerPhase, WindStep } from '../../mechanics/ketuduke/types.ts';
-import { mahjongRegion } from '../../mechanics/ketuduke/queue.ts';
 import type { QuadrantWindEffect } from '../../presentation/ketuduke/wind-effects.ts';
-import { WIND_ACTOR_MOVE_DURATION_MS } from '../../presentation/ketuduke/wind-effects.ts';
+import {
+  WIND_ACTOR_MOVE_DURATION_MS,
+  WIND_HOLD_DURATION_MS,
+  WIND_MOVE_DURATION_MS
+} from '../../presentation/ketuduke/wind-effects.ts';
 import CrystalMarker from './CrystalMarker.vue';
 import RoleMarker from './RoleMarker.vue';
 
@@ -14,15 +17,16 @@ const props = defineProps<{
   question: KetudukeQuestion;
   ready: boolean;
   focus: Role | null;
-  mahVisible: boolean;
   phase: TrainerPhase;
   interactive: boolean;
   queueCells: CellIndex[];
   crystals: Crystal[];
   review: boolean;
   safeCells: CellIndex[];
+  hazardCells: CellIndex[];
   windStep: WindStep | null;
   windEffects: QuadrantWindEffect[];
+  mahjongCues: QuadrantWindEffect[];
   animateActors: boolean;
   positions?: PartialRoleMap<CellIndex>;
 }>();
@@ -36,8 +40,7 @@ const cells = computed(() => Array.from({ length: 16 }, (_, index) => {
   const r = Math.floor(index / 4);
   const c = index % 4;
   const roles = ROLES.filter(role => props.positions?.[role] === index);
-  const mahjong = props.mahVisible ? mahjongRegion(props.question, r, c) : undefined;
-  return { index, r, c, roles, mahjong, coordinateLabel: formatGridCoordinate({ r, c }) };
+  return { index, r, c, roles, coordinateLabel: formatGridCoordinate({ r, c }) };
 }));
 
 const roleActors = computed(() => ROLES.flatMap(role => {
@@ -61,6 +64,7 @@ function selectCell(cell: CellIndex): void {
   if (!props.interactive) return;
   emit('selectCell', cell);
 }
+
 </script>
 
 <template>
@@ -74,25 +78,49 @@ function selectCell(cell: CellIndex): void {
           'queue-line': phase === 0 && queueCells.includes(cell.index),
           selected: cell.roles.length > 0,
           safe: review && safeCells.includes(cell.index),
-          hazard: review && !safeCells.includes(cell.index)
+          hazard: review && hazardCells.includes(cell.index)
         }"
         type="button"
         :aria-label="cell.coordinateLabel"
         :disabled="!interactive"
         @click="selectCell(cell.index)"
-      >
-        <span v-if="cell.mahjong" class="mahjong-marker" :class="`region-${cell.mahjong}`">
-          {{ cell.mahjong === 1 ? '① ↔' : '② ↕' }}
-        </span>
-      </button>
+      ></button>
 
-      <div v-if="windEffects.length" class="board-wind-layer" aria-hidden="true" inert>
+      <div v-if="mahjongCues.length" class="board-wind-cue-layer" aria-hidden="true" inert>
+        <span
+          v-for="cue in mahjongCues"
+          :key="`wind-cue-${cue.quadrant}`"
+          class="quadrant-wind-cue"
+          :class="[`quadrant-${cue.quadrant}`, `wind-${cue.direction}`]"
+        ></span>
+      </div>
+
+      <div v-if="mahjongCues.length" class="board-mahjong-layer" aria-hidden="true" inert>
+        <span
+          v-for="cue in mahjongCues"
+          :key="`mahjong-${cue.quadrant}`"
+          class="mahjong-quadrant-marker"
+          :class="[`quadrant-${cue.quadrant}`, `region-${cue.region}`]"
+        >
+          <i v-for="dot in cue.region" :key="dot" class="mahjong-dot"></i>
+        </span>
+      </div>
+
+      <div
+        v-if="windEffects.length"
+        class="board-wind-layer"
+        :style="{
+          '--wind-move-duration': `${WIND_MOVE_DURATION_MS}ms`,
+          '--wind-hold-duration': `${WIND_HOLD_DURATION_MS}ms`
+        }"
+        aria-hidden="true"
+        inert
+      >
         <span
           v-for="effect in windEffects"
           :key="`${effect.step}-${effect.quadrant}`"
           class="quadrant-wind-effect"
           :class="[`quadrant-${effect.quadrant}`, `wind-${effect.direction}`]"
-          :style="{ '--wind-round-duration': `${effect.durationMs}ms` }"
         >
           <span class="wind-sweep"></span>
         </span>

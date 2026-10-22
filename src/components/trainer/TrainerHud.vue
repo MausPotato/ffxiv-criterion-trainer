@@ -46,6 +46,6 @@ defineEmits<{
       <button class="secondary-button" type="button" :disabled="nextDisabled" @click="$emit('next')">揭示麻將</button>
       <button class="secondary-button" type="button" :disabled="resetDisabled" @click="$emit('reset')">{{ resetText }}</button>
     </div>
-    <p class="phase-note">作答期間只顯示自己；完成吹風結算後才揭示全隊落點。</p>
+    <p class="phase-note">作答期間只顯示自己；吹風前站位通過後才揭示隊友並一起回放。</p>
   </section>
 </template>

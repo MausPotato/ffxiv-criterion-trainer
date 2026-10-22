@@ -7,9 +7,12 @@ import type {
   WindStep
 } from '../../mechanics/ketuduke/types.ts';
 
-export const WIND_ROUND_DURATION_MS = 5_000;
-export const WIND_ACTOR_START_DELAY_MS = 50;
-export const WIND_ACTOR_MOVE_DURATION_MS = WIND_ROUND_DURATION_MS - WIND_ACTOR_START_DELAY_MS;
+export const WIND_MOVE_DURATION_MS = 1_000;
+export const WIND_HOLD_DURATION_MS = 500;
+export const WIND_ROUND_DURATION_MS = WIND_MOVE_DURATION_MS + WIND_HOLD_DURATION_MS;
+export const WIND_REPLAY_DURATION_MS = WIND_ROUND_DURATION_MS * 2;
+export const WIND_ACTOR_START_DELAY_MS = 0;
+export const WIND_ACTOR_MOVE_DURATION_MS = WIND_MOVE_DURATION_MS;
 
 export type WindDirection = 'left' | 'right' | 'up' | 'down';
 
@@ -51,4 +54,11 @@ export function windEffectsForStep(
       durationMs: WIND_ROUND_DURATION_MS
     }];
   });
+}
+
+export function quadrantWindCues(question: KetudukeQuestion): QuadrantWindEffect[] {
+  return [
+    ...windEffectsForStep(question, 1),
+    ...windEffectsForStep(question, 2)
+  ].sort((left, right) => left.quadrant - right.quadrant);
 }

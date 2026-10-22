@@ -14,6 +14,7 @@ defineProps<{
   settings: TrainerSettings;
   hintVisible: boolean;
   roleLocked: boolean;
+  mechanicRevealed: boolean;
   mahjongRunHint: MahjongRunHint | null;
 }>();
 
@@ -56,7 +57,7 @@ defineEmits<{
         >
         <span>
           <strong>吹風位移動畫</strong>
-          <small>兩輪各約 5 秒；關閉時直接結算</small>
+          <small>每輪移動 1 秒＋停留 0.5 秒</small>
         </span>
       </label>
     </div>
@@ -83,7 +84,7 @@ defineEmits<{
         </span>
         <span v-else class="role-buff pending">待揭示</span>
         <MechanicIcon
-          v-if="ready && (question.party === '分散' || question.buffs[role] === 'bubble')"
+          v-if="mechanicRevealed && (question.party === '分散' || question.buffs[role] === 'bubble')"
           class="role-mechanic-icon"
           :name="question.party === '分散' ? 'spread' : 'stack'"
           :alt="question.party"
@@ -91,7 +92,7 @@ defineEmits<{
       </button>
     </div>
 
-    <div v-if="ready" class="mechanic-reveal" :class="question.party === '分攤' ? 'stack' : 'spread'">
+    <div v-if="mechanicRevealed" class="mechanic-reveal" :class="question.party === '分攤' ? 'stack' : 'spread'">
       <MechanicIcon
         :name="question.party === '分攤' ? 'stack' : 'spread'"
         :alt="question.party"
@@ -101,26 +102,16 @@ defineEmits<{
 
     <div v-if="mahjongRunHint" class="mahjong-run-hint" aria-live="polite">
       <span class="mahjong-run-label">①／② 麻跑法</span>
-      <div v-if="mahjongRunHint.bubble === mahjongRunHint.bind" class="mahjong-run-route">
-        <strong>泡泡、止步</strong>
-        <span aria-hidden="true">→</span>
-        <b class="mahjong-run-destination" :class="`region-${mahjongRunHint.bubble}`">
-          {{ mahjongRunHint.bubble === 1 ? '① 麻' : '② 麻' }}
-        </b>
-      </div>
-      <div v-else class="mahjong-run-routes">
-        <span class="mahjong-run-route">
-          <strong>泡泡</strong><span aria-hidden="true">→</span>
-          <b class="mahjong-run-destination" :class="`region-${mahjongRunHint.bubble}`">
-            {{ mahjongRunHint.bubble === 1 ? '① 麻' : '② 麻' }}
-          </b>
-        </span>
-        <span class="mahjong-run-route">
-          <strong>止步</strong><span aria-hidden="true">→</span>
-          <b class="mahjong-run-destination" :class="`region-${mahjongRunHint.bind}`">
-            {{ mahjongRunHint.bind === 1 ? '① 麻' : '② 麻' }}
-          </b>
-        </span>
+      <div class="mahjong-run-routes">
+        <template v-for="(route, index) in mahjongRunHint.routes" :key="route.group">
+          <span v-if="index" class="mahjong-run-separator" aria-hidden="true">｜</span>
+          <span class="mahjong-run-route">
+            <strong>{{ route.group }}</strong><span aria-hidden="true">→</span>
+            <b class="mahjong-run-destination" :class="`region-${route.region}`">
+              {{ route.region === 1 ? '① 麻' : '② 麻' }}
+            </b>
+          </span>
+        </template>
       </div>
     </div>
 
