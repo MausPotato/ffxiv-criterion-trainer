@@ -15,6 +15,7 @@ import { RouterLink, RouterView } from 'vue-router';
       <nav aria-label="主要導覽">
         <RouterLink to="/">迷宮一覽</RouterLink>
         <RouterLink to="/aloalo-island/ketuduke">凱圖嘟凱</RouterLink>
+        <RouterLink to="/aloalo-island/lalaru/rotation">拉拉魯</RouterLink>
       </nav>
     </header>
 

@@ -8,6 +8,7 @@ interface DungeonCard {
   accent: 'amber' | 'violet' | 'cyan';
   status: string;
   to?: string;
+  secondaryTo?: string;
 }
 
 const dungeons: readonly DungeonCard[] = [
@@ -31,7 +32,8 @@ const dungeons: readonly DungeonCard[] = [
     subtitle: 'Another Aloalo Island',
     accent: 'cyan',
     status: '可練習',
-    to: '/aloalo-island/ketuduke'
+    to: '/aloalo-island/ketuduke',
+    secondaryTo: '/aloalo-island/lalaru/rotation'
   }
 ];
 </script>
@@ -60,7 +62,10 @@ const dungeons: readonly DungeonCard[] = [
           v-for="dungeon in dungeons"
           :key="dungeon.number"
           class="dungeon-card"
-          :class="[`accent-${dungeon.accent}`, { available: dungeon.to }]"
+          :class="[
+            `accent-${dungeon.accent}`,
+            { available: dungeon.to, 'has-secondary-action': dungeon.secondaryTo }
+          ]"
         >
           <div class="card-orbit" aria-hidden="true"></div>
           <div class="card-topline">
@@ -74,12 +79,45 @@ const dungeons: readonly DungeonCard[] = [
             <p>{{ dungeon.subtitle }}</p>
             <h3>{{ dungeon.name }}</h3>
           </div>
-          <RouterLink v-if="dungeon.to" class="card-action" :to="dungeon.to">
-            進入一王練習 <span aria-hidden="true">→</span>
-          </RouterLink>
+          <div v-if="dungeon.to" class="card-action-group">
+            <RouterLink class="card-action" :to="dungeon.to">
+              一王・凱圖嘟凱 <span aria-hidden="true">→</span>
+            </RouterLink>
+            <RouterLink v-if="dungeon.secondaryTo" class="card-action" :to="dungeon.secondaryTo">
+              二王・拉拉魯 <span aria-hidden="true">→</span>
+            </RouterLink>
+          </div>
           <span v-else class="card-action disabled">機制整理中</span>
         </article>
       </div>
     </section>
   </main>
 </template>
+
+<style scoped>
+.card-action-group {
+  position: absolute;
+  right: 22px;
+  bottom: 18px;
+  left: 22px;
+  z-index: 2;
+  display: grid;
+}
+
+.card-action-group .card-action {
+  position: static;
+  min-height: 36px;
+  margin: 0;
+  padding: 8px 0;
+}
+
+.dungeon-card.has-secondary-action {
+  min-height: 340px;
+}
+
+.dungeon-card.has-secondary-action .dungeon-emblem {
+  width: 84px;
+  height: 84px;
+  margin: 30px auto 20px;
+}
+</style>

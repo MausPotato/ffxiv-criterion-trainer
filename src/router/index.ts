@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import HomeView from '../views/HomeView.vue';
 import KetudukeTrainerView from '../views/KetudukeTrainerView.vue';
+import LalaRuTrainerView from '../views/LalaRuTrainerView.vue';
 
 export const router = createRouter({
   history: createWebHistory(),
@@ -15,6 +16,11 @@ export const router = createRouter({
       path: '/aloalo-island/ketuduke',
       name: 'ketuduke-trainer',
       component: KetudukeTrainerView
+    },
+    {
+      path: '/aloalo-island/lalaru/rotation',
+      name: 'lalaru-rotation-trainer',
+      component: LalaRuTrainerView
     },
     {
       path: '/dungeons/aloalo-island/bosses/ketuduke/mechanics/queue-method',
