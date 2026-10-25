@@ -29,13 +29,11 @@ import type {
   PlayerRotationState
 } from '../../composables/useLalaRuCompositeTrainer.ts';
 import { useLalaRuArenaInteraction } from '../../composables/useLalaRuArenaInteraction.ts';
-import {
-  CAMERA_ROTATION_STEP_DEGREES,
-  worldPointToCameraPoint
-} from '../../presentation/lalaru/camera.ts';
+import { worldPointToCameraPoint } from '../../presentation/lalaru/camera.ts';
 import { MECHANIC_ICONS, type MechanicIconName } from '../../assets/mechanic-icons.ts';
 import AnalysisRing from './AnalysisRing.vue';
 import MechanicIcon from '../trainer/MechanicIcon.vue';
+import TrainerCameraControls from '../trainer/TrainerCameraControls.vue';
 import PlayerFacingIndicator from './PlayerFacingIndicator.vue';
 import RotationCueIcon from './RotationCueIcon.vue';
 
@@ -337,7 +335,7 @@ function orbStyle(orb: CompositeOrb): Record<string, string> {
 
       <div v-if="phase === 'idle'" class="composite-start-overlay">
         <span class="start-rune" aria-hidden="true">◇</span>
-        <button class="primary-button start-button" type="button" @click="emit('start')">開始複合魔紋</button>
+        <button class="primary-button start-button" type="button" @click="emit('start')">開始練習</button>
         <small>3 秒預覽後，兩側 AoE 每秒同步前進一格</small>
       </div>
 
@@ -348,12 +346,12 @@ function orbStyle(orb: CompositeOrb): Record<string, string> {
       <div v-if="phase === 'dead' && deathRecord" class="arena-result failure">KO</div>
     </div>
 
-    <div class="camera-controls" aria-label="視角控制">
-      <button type="button" @click="rotateCameraBy(-CAMERA_ROTATION_STEP_DEGREES)">逆時針 90°</button>
-      <button type="button" @click="resetCamera">重置視角</button>
-      <button type="button" @click="rotateCameraBy(CAMERA_ROTATION_STEP_DEGREES)">順時針 90°</button>
-    </div>
-    <p class="camera-readout">右鍵水平拖曳旋轉視角 · {{ Math.round(cameraRotation) }}°</p>
+    <TrainerCameraControls
+      class="camera-controls-shell"
+      :rotation="cameraRotation"
+      @rotate="rotateCameraBy"
+      @reset="resetCamera"
+    />
   </div>
 </template>
 
@@ -406,15 +404,10 @@ function orbStyle(orb: CompositeOrb): Record<string, string> {
 .pause-badge { color: #ffd76c; }
 .arena-result.success { color: #7cebb4; }
 .arena-result.failure { color: #ff7b88; }
-.camera-controls { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; width: min(100%, 680px, calc(100cqh - 58px)); margin-top: 10px; }
-.camera-controls button { min-height: 36px; padding: 7px 9px; border: 1px solid #3b596a; border-radius: 8px; color: #c7dbe3; background: #10212d; cursor: pointer; font-size: 12px; }
-.camera-controls button:hover { border-color: #5dc8df; color: #f1fcff; background: #173442; }
-.camera-readout { width: min(100%, 680px, calc(100cqh - 58px)); margin: 6px 0 0; color: var(--text-helper); font: 11px ui-monospace, monospace; text-align: center; }
 @keyframes active-cell-pulse { from { filter: brightness(1.75); } to { filter: brightness(1); } }
 @keyframes cannon-impact { 0% { opacity: .25; } 28% { opacity: 1; } 100% { opacity: .86; } }
 @keyframes orb-charge { 0% { transform: scale(1); } 35% { transform: scale(1.45); filter: brightness(2); } 100% { transform: scale(.1); opacity: 0; } }
 @keyframes orb-impact { 0% { background: rgba(224, 253, 255, .9); box-shadow: inset 0 0 0 0 rgba(173, 244, 255, .9); } 45% { background: rgba(104, 224, 255, .28); box-shadow: inset 0 0 0 12cqw rgba(183, 247, 255, .35); } 100% { background: transparent; box-shadow: inset 0 0 0 40cqw rgba(183, 247, 255, 0); } }
 @keyframes high-precision-impact { 0% { background: rgba(255, 244, 196, .88); } 42% { background: rgba(255, 174, 78, .24); box-shadow: inset 0 0 0 12cqw rgba(255, 213, 127, .3); } 100% { background: transparent; box-shadow: inset 0 0 0 40cqw transparent; } }
-@media (max-width: 860px) { .composite-arena-shell { height: auto; } .composite-camera-viewport, .camera-controls, .camera-readout { width: min(100%, 680px); } }
-@media (max-width: 520px) { .camera-controls { grid-template-columns: 1fr 1fr; } .camera-controls button:nth-child(2) { grid-column: 1 / -1; grid-row: 2; } }
+@media (max-width: 860px) { .composite-arena-shell { height: auto; } .composite-camera-viewport, .camera-controls-shell { width: min(100%, 680px); } }
 </style>

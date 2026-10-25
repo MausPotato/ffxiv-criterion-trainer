@@ -1,14 +1,32 @@
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { RouterLink } from 'vue-router';
 import LalaRuArena from '../components/lalaru/LalaRuArena.vue';
 import LalaRuCheatSheet from '../components/lalaru/LalaRuCheatSheet.vue';
+import TrainerActionRow from '../components/trainer/TrainerActionRow.vue';
+import TrainerPracticeSettings from '../components/trainer/TrainerPracticeSettings.vue';
+import TrainerSegmentedControl from '../components/trainer/TrainerSegmentedControl.vue';
+import TrainerStageCard from '../components/trainer/TrainerStageCard.vue';
+import TrainerStats from '../components/trainer/TrainerStats.vue';
 import { useLalaRuTrainer } from '../composables/useLalaRuTrainer.ts';
 import { LALARU_TIMING } from '../mechanics/lalaru/timing.ts';
 import type { ArrowSide, CardinalDirection, SelectedSide } from '../mechanics/lalaru/types.ts';
 
 const trainer = useLalaRuTrainer();
 const showCheatSheet = ref(true);
+const modeOptions = [
+  { value: 'tutorial', label: '教學模式' },
+  { value: 'battle', label: '實戰模式' }
+] as const;
+
+const stageBadge = computed(() => trainer.phase.value === 'resolved' ? '結算階段' : trainer.phase.value === 'casting' ? '作答階段' : '準備階段');
+const stageClock = computed(() => trainer.phase.value === 'casting' ? '▶ CASTING' : trainer.phase.value === 'resolved' ? '✓ COMPLETE' : 'Ⅱ WAITING');
+const stageTitle = computed(() => trainer.phase.value === 'casting' ? '判定倒數中' : trainer.phase.value === 'resolved' ? (trainer.succeeded.value ? '走位成功' : '受到攻擊') : '準備中');
+const stageDescription = computed(() => trainer.phase.value === 'casting'
+  ? '拖曳 YOU 移動。技能只會在最後一次結算。'
+  : trainer.phase.value === 'resolved'
+    ? '本題已依結算瞬間的位置完成判定。'
+    : '初始安全區會隨題目改變；角色可在場內自由拖曳。');
 
 const cardinalLabels: Readonly<Record<CardinalDirection, string>> = {
   north: '北', east: '東', south: '南', west: '西'
@@ -25,8 +43,8 @@ onBeforeUnmount(() => document.removeEventListener('contextmenu', preventContext
 </script>
 
 <template>
-  <main class="lalaru-page">
-    <div class="lalaru-heading">
+  <main class="trainer-page lalaru-page">
+    <div class="trainer-heading lalaru-heading">
       <div>
         <RouterLink class="back-link" to="/">← 回到迷宮一覽</RouterLink>
         <h1>拉拉魯｜旋轉角乘算</h1>
@@ -40,8 +58,8 @@ onBeforeUnmount(() => document.removeEventListener('contextmenu', preventContext
       <RouterLink to="/aloalo-island/lalaru/composite-pattern">複合魔紋</RouterLink>
     </nav>
 
-    <div class="lalaru-layout">
-      <section class="panel lalaru-arena-panel">
+    <div class="trainer-layout lalaru-layout">
+      <section class="arena-panel panel lalaru-arena-panel">
         <LalaRuArena
           :phase="trainer.phase.value"
           :mode="trainer.mode.value"
@@ -60,59 +78,75 @@ onBeforeUnmount(() => document.removeEventListener('contextmenu', preventContext
         />
       </section>
 
-      <aside class="panel lalaru-control-panel">
-        <section>
-          <p class="section-kicker">TRAINING MODE</p>
-          <h2>練習設定</h2>
-          <div class="mode-switch" role="group" aria-label="練習模式">
-            <button
-              type="button"
-              :class="{ active: trainer.mode.value === 'tutorial' }"
-              :disabled="trainer.phase.value === 'casting'"
-              @click="trainer.setMode('tutorial')"
-            >教學模式</button>
-            <button
-              type="button"
-              :class="{ active: trainer.mode.value === 'battle' }"
-              :disabled="trainer.phase.value === 'casting'"
-              @click="trainer.setMode('battle')"
-            >實戰模式</button>
-          </div>
+      <aside class="control-panel panel trainer-control-stack lalaru-control-panel">
+        <TrainerPracticeSettings title-id="rotation-settings-title" kicker="TRAINING MODE">
+          <TrainerSegmentedControl
+            :model-value="trainer.mode.value"
+            :options="modeOptions"
+            label="練習模式"
+            :disabled="trainer.phase.value === 'casting'"
+            @change="value => trainer.setMode(value as 'tutorial' | 'battle')"
+          />
           <p class="mode-description">
             {{ trainer.mode.value === 'tutorial'
               ? '結算後顯示完整推導；結算前不會標出答案。'
               : '只保留實戰可觀察資訊；結算前不顯示方向答案。' }}
           </p>
           <button
-            class="cheat-sheet-toggle"
+            class="secondary-button cheat-sheet-toggle"
             type="button"
             aria-controls="lalaru-cheat-sheet"
             :aria-expanded="showCheatSheet"
             @click="showCheatSheet = !showCheatSheet"
           >{{ showCheatSheet ? '隱藏乘算小抄' : '顯示乘算小抄' }}</button>
-        </section>
+        </TrainerPracticeSettings>
 
         <LalaRuCheatSheet id="lalaru-cheat-sheet" v-show="showCheatSheet" />
 
-        <section class="lalaru-status-card" aria-live="polite">
-          <div class="status-heading">
-            <span>{{ trainer.phase.value === 'idle' ? 'READY' : trainer.phase.value === 'casting' ? 'CASTING' : 'SETTLED' }}</span>
-            <strong v-if="trainer.phase.value === 'casting'">判定倒數中</strong>
-            <strong v-else-if="trainer.phase.value === 'resolved'" :class="trainer.succeeded.value ? 'success' : 'failure'">
-              {{ trainer.succeeded.value ? '走位成功' : '受到攻擊' }}
-            </strong>
-            <strong v-else>等待開始</strong>
-          </div>
+        <section class="hud-section lalaru-hud" aria-live="polite">
+          <TrainerStats
+            :round="trainer.attempts.value"
+            :wins="trainer.successes.value"
+            round-label="完成"
+            wins-label="成功"
+            :show-streak="false"
+          />
+          <TrainerStageCard
+            :badge="stageBadge"
+            :clock="stageClock"
+            :title="stageTitle"
+            :status="stageDescription"
+          >
           <div
             v-if="trainer.phase.value === 'casting' && trainer.mode.value === 'tutorial'"
-            class="cast-progress"
+            class="stage-progress is-timed"
             aria-hidden="true"
+            :style="{ '--stage-duration': `${LALARU_TIMING.resolveMs}ms` }"
           >
-            <span :key="trainer.animationKey.value" :style="{ '--resolve-duration': `${LALARU_TIMING.resolveMs}ms` }"></span>
+            <span :key="trainer.animationKey.value"></span>
           </div>
-          <p v-if="trainer.phase.value === 'casting'">拖曳 YOU 移動。技能只會在最後一次結算。</p>
-          <p v-else-if="trainer.phase.value === 'idle'">初始安全區會隨題目改變；角色可在場內自由拖曳。</p>
-          <p v-else>本題已依結算瞬間的位置完成判定。</p>
+          </TrainerStageCard>
+
+          <TrainerActionRow class="two-column">
+            <button
+              v-if="trainer.phase.value === 'resolved'"
+              class="secondary-button"
+              type="button"
+              @click="trainer.retry"
+            >重新本題</button>
+            <button
+              v-if="trainer.phase.value === 'resolved'"
+              class="primary-button"
+              type="button"
+              @click="trainer.nextQuestion"
+            >下一題</button>
+            <button
+              v-if="trainer.phase.value === 'idle'"
+              class="primary-button wide"
+              type="button"
+              @click="trainer.start"
+            >開始</button>
+          </TrainerActionRow>
         </section>
 
         <section
@@ -138,65 +172,19 @@ onBeforeUnmount(() => document.removeEventListener('contextmenu', preventContext
           </div>
         </section>
 
-        <section class="lalaru-actions">
-          <div class="score-line">
-            <span>完成 {{ trainer.attempts.value }}</span>
-            <span>成功 {{ trainer.successes.value }}</span>
-          </div>
-          <button
-            v-if="trainer.phase.value === 'resolved'"
-            class="secondary-button"
-            type="button"
-            @click="trainer.retry"
-          >重新本題</button>
-          <button
-            v-if="trainer.phase.value === 'resolved'"
-            class="primary-button"
-            type="button"
-            @click="trainer.nextQuestion"
-          >下一題</button>
-          <button
-            v-if="trainer.phase.value === 'idle'"
-            class="primary-button wide"
-            type="button"
-            @click="trainer.start"
-          >開始</button>
-        </section>
       </aside>
     </div>
   </main>
 </template>
 
 <style scoped>
-.lalaru-page { display: flex; width: min(1440px, calc(100% - 40px)); height: calc(100dvh - 72px); max-height: calc(100dvh - 72px); margin: 0 auto; padding: 8px 0; flex-direction: column; overflow: hidden; user-select: none; -webkit-user-select: none; }
-.lalaru-heading { display: flex; align-items: end; justify-content: space-between; flex: 0 0 auto; gap: 20px; margin-bottom: 6px; }
-.lalaru-heading h1 { margin: 2px 0 0; font-size: var(--type-page-title); letter-spacing: -.025em; line-height: 1.15; }
-.lalaru-heading > div > p:last-child { margin: 0; color: var(--text-helper); font-size: var(--type-body); line-height: var(--leading-compact); }
-.back-link { display: inline-block; margin-bottom: 8px; color: #9ec5d2; font-size: 13px; text-decoration: none; }
-.mechanic-nav { display: flex; flex: 0 0 auto; gap: 7px; margin: 0 0 7px; }
-.mechanic-nav a { padding: 5px 10px; border: 1px solid var(--line-soft); border-radius: 999px; color: var(--text-secondary); background: #101c27; font-size: var(--type-secondary); text-decoration: none; }
-.mechanic-nav a.active { border-color: #4dbbd3; color: #e8fbff; background: #173d49; }
-.lalaru-layout { display: grid; min-height: 0; flex: 1 1 auto; grid-template-columns: minmax(0, 1.08fr) minmax(420px, .92fr); gap: 11px; align-items: stretch; overflow: hidden; }
-.lalaru-arena-panel { display: grid; height: 100%; min-height: 0; min-width: 0; padding: 10px; overflow: hidden; place-items: center; container-type: size; }
-.lalaru-control-panel { display: flex; height: 100%; min-width: 0; flex-direction: column; gap: 12px; padding: 12px; overflow-y: auto; scrollbar-width: none; }
-.lalaru-control-panel::-webkit-scrollbar { display: none; }
-.lalaru-control-panel section + section { padding-top: 13px; border-top: 1px solid var(--line-soft); }
+.lalaru-page { user-select: none; -webkit-user-select: none; }
 .lalaru-control-panel h2 { margin: 0; font-size: 19px; }
-.mode-switch { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-top: 10px; }
-.mode-switch button { padding: 9px; border: 1px solid #3b5363; border-radius: 8px; color: #b9cad3; background: #101c27; cursor: pointer; }
-.mode-switch button.active { border-color: #5ccbe2; color: #eafcff; background: #1a4655; }
-.mode-description, .lalaru-status-card p { margin: 8px 0 0; color: var(--text-helper); font-size: 13px; line-height: 1.55; }
-.cheat-sheet-toggle { width: 100%; margin-top: 10px; padding: 8px 10px; border: 1px solid #3b5363; border-radius: 8px; color: #c5d7df; background: #101c27; cursor: pointer; font-size: 12px; }
-.cheat-sheet-toggle:hover { border-color: #5ccbe2; color: #effcff; background: #173442; }
-.cheat-sheet-toggle:focus-visible { outline: 2px solid #68d7ed; outline-offset: 2px; }
-.lalaru-status-card { padding: 13px !important; border: 1px solid #345165 !important; border-radius: 10px; background: linear-gradient(135deg, #142a39, #12222e); }
-.status-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-.status-heading span { color: #7ed9ec; font: 750 11px ui-monospace, monospace; letter-spacing: .15em; }
-.status-heading strong { font-size: 14px; }
+.mode-description { margin: 8px 0 0; color: var(--text-helper); font-size: var(--type-secondary); line-height: var(--leading-body); }
+.cheat-sheet-toggle { width: 100%; margin-top: 8px; padding: 7px 10px; font-size: var(--type-body); }
+.lalaru-hud { margin-top: 0; }
 .success { color: #74e7aa; }
 .failure { color: #ff7784; }
-.cast-progress { height: 5px; margin-top: 10px; overflow: hidden; border-radius: 99px; background: #2b4453; }
-.cast-progress span { display: block; width: 100%; height: 100%; background: linear-gradient(90deg, #50cde8, #f5c568); transform-origin: left; animation: cast-progress var(--resolve-duration) linear forwards; }
 .solution-chain { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; margin: 10px 0; color: #bdcdd5; font-size: 14px; line-height: 1.8; }
 .solution-chain strong { color: #fff; }
 .solution-chain .initial-answer { color: #75d8ff; }
@@ -206,23 +194,11 @@ onBeforeUnmount(() => document.removeEventListener('contextmenu', preventContext
 .sector-legend i { width: 12px; height: 12px; border-radius: 3px; }
 .sector-legend i.initial { border: 1px solid #6ed7ff; background: rgba(79, 176, 226, .4); }
 .sector-legend i.final { border: 1px solid #70ecad; background: rgba(76, 220, 143, .4); }
-.lalaru-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
-.score-line { display: flex; grid-column: 1 / -1; justify-content: space-between; color: var(--text-helper); font: 12px ui-monospace, monospace; }
-.lalaru-actions button { padding: 10px; }
-.lalaru-actions .wide { grid-column: 1 / -1; }
-@keyframes cast-progress { from { transform: scaleX(0); } to { transform: scaleX(1); } }
 @media (max-width: 860px) {
-  .lalaru-page { display: block; height: auto; min-height: calc(100dvh - 72px); padding: 18px 0 32px; overflow: visible; }
-  .lalaru-layout { grid-template-columns: 1fr; }
-  .lalaru-heading { align-items: start; }
-  .lalaru-arena-panel { height: auto; container-type: normal; }
-  .lalaru-control-panel { height: auto; overflow: visible; }
+  .lalaru-page { min-height: calc(100dvh - 72px); }
 }
 @media (max-width: 520px) {
-  .lalaru-page { width: calc(100% - 20px); padding-top: 14px; }
-  .lalaru-heading .version-chip { display: none; }
   .mechanic-nav { overflow-x: auto; }
   .mechanic-nav a { flex: 0 0 auto; }
-  .lalaru-arena-panel { padding: 7px; }
 }
 </style>

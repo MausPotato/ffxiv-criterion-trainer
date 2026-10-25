@@ -6,6 +6,7 @@ import type {
   TrainerSettings
 } from '../../composables/useKetudukeTrainer.ts';
 import MechanicIcon from './MechanicIcon.vue';
+import TrainerPracticeSettings from './TrainerPracticeSettings.vue';
 
 defineProps<{
   focus: Role | null;
@@ -28,14 +29,10 @@ defineEmits<{
 </script>
 
 <template>
-  <section class="control-section" aria-labelledby="settings-title">
-    <div class="control-section-heading">
-      <div>
-        <p class="section-kicker">PRACTICE SETTINGS</p>
-        <h2 id="settings-title">練習設定</h2>
-      </div>
+  <TrainerPracticeSettings class="control-section" title-id="settings-title">
+    <template #action>
       <button class="icon-button" type="button" title="產生新題目" @click="$emit('newQuestion')">↻</button>
-    </div>
+    </template>
 
     <div class="setting-row">
       <label class="switch-row">
@@ -123,5 +120,5 @@ defineEmits<{
       <p>橫水晶排直行，直水晶排橫列；止步站兩側，泡泡站中間。</p>
       <p>麻將揭示後依①、②方向移動一格，再確認吹風前站位。</p>
     </div>
-  </section>
+  </TrainerPracticeSettings>
 </template>

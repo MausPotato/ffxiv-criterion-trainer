@@ -10,8 +10,8 @@ import {
 } from '../../mechanics/lalaru/index.ts';
 import type { AnalysisPhase } from '../../composables/useLalaRuAnalysisTrainer.ts';
 import { useLalaRuArenaInteraction } from '../../composables/useLalaRuArenaInteraction.ts';
-import { CAMERA_ROTATION_STEP_DEGREES } from '../../presentation/lalaru/camera.ts';
 import { MECHANIC_ICONS, type MechanicIconName } from '../../assets/mechanic-icons.ts';
+import TrainerCameraControls from '../trainer/TrainerCameraControls.vue';
 import AnalysisRing from './AnalysisRing.vue';
 import PlayerFacingIndicator from './PlayerFacingIndicator.vue';
 
@@ -133,7 +133,7 @@ function actorStyle(point: ArenaPoint, diameter: number): Record<string, string>
 
       <div v-if="phase === 'idle'" class="analysis-start-overlay">
         <span class="start-rune" aria-hidden="true">◇</span>
-        <button class="primary-button start-button" type="button" @click="emit('start')">開始分析練習</button>
+        <button class="primary-button start-button" type="button" @click="emit('start')">開始練習</button>
         <small>WASD 移動・Q/E 原地轉向・右鍵拖曳視角</small>
       </div>
 
@@ -142,12 +142,13 @@ function actorStyle(point: ArenaPoint, diameter: number): Record<string, string>
       </div>
     </div>
 
-    <div class="camera-controls" aria-label="視角控制">
-      <button type="button" @click="rotateCameraBy(-CAMERA_ROTATION_STEP_DEGREES)">逆時針 90°</button>
-      <button type="button" @click="resetCamera">重置視角</button>
-      <button type="button" @click="rotateCameraBy(CAMERA_ROTATION_STEP_DEGREES)">順時針 90°</button>
-    </div>
-    <p class="camera-readout">WASD／方向鍵移動・Q/E 轉向・視角 {{ Math.round(cameraRotation) }}°</p>
+    <TrainerCameraControls
+      class="camera-controls-shell"
+      :rotation="cameraRotation"
+      instructions="WASD／方向鍵移動・Q/E 轉向・視角"
+      @rotate="rotateCameraBy"
+      @reset="resetCamera"
+    />
   </div>
 </template>
 
@@ -177,11 +178,8 @@ function actorStyle(point: ArenaPoint, diameter: number): Record<string, string>
 .analysis-start-overlay small { color: #b5c9d3; } .start-rune { color: #65d7ed; font-size: 30px; text-shadow: 0 0 22px #52d1ec; }
 .arena-result { position: absolute; top: 6%; left: 50%; z-index: 21; padding: 7px 18px; border: 1px solid currentColor; border-radius: 999px; background: rgba(6, 18, 25, .88); font: 900 14px ui-monospace, monospace; letter-spacing: .15em; transform: translateX(-50%); }
 .arena-result.success { color: #7cebb4; } .arena-result.failure { color: #ff7b88; }
-.camera-controls { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; width: min(100%, 680px, calc(100cqh - 58px)); margin-top: 10px; }
-.camera-controls button { min-height: 36px; padding: 7px 9px; border: 1px solid #3b596a; border-radius: 8px; color: #c7dbe3; background: #10212d; cursor: pointer; font-size: 12px; }
-.camera-readout { width: min(100%, 680px, calc(100cqh - 58px)); margin: 6px 0 0; color: var(--text-helper); font: 11px ui-monospace, monospace; text-align: center; }
 @keyframes resolve-progress { from { transform: scaleX(0); } to { transform: scaleX(1); } }
 @keyframes orb-explode { 0% { transform: translate(-50%, -50%) scale(1); } 40% { transform: translate(-50%, -50%) scale(1.8); filter: brightness(2); } 100% { transform: translate(-50%, -50%) scale(.1); opacity: 0; } }
 @keyframes analysis-impact { 0% { background: rgba(229, 254, 255, .92); } 45% { background: rgba(105, 223, 255, .24); box-shadow: inset 0 0 0 12cqw rgba(189, 248, 255, .3); } 100% { background: transparent; box-shadow: inset 0 0 0 40cqw transparent; } }
-@media (max-width: 860px) { .analysis-arena-shell { height: auto; } .analysis-camera-viewport, .camera-controls, .camera-readout { width: min(100%, 680px); } }
+@media (max-width: 860px) { .analysis-arena-shell { height: auto; } .analysis-camera-viewport, .camera-controls-shell { width: min(100%, 680px); } }
 </style>

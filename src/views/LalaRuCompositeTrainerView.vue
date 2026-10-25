@@ -3,6 +3,11 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { RouterLink } from 'vue-router';
 import LalaRuCompositeArena from '../components/lalaru/LalaRuCompositeArena.vue';
 import DeathDialog from '../components/trainer/DeathDialog.vue';
+import TrainerActionRow from '../components/trainer/TrainerActionRow.vue';
+import TrainerPracticeSettings from '../components/trainer/TrainerPracticeSettings.vue';
+import TrainerSegmentedControl from '../components/trainer/TrainerSegmentedControl.vue';
+import TrainerStageCard from '../components/trainer/TrainerStageCard.vue';
+import TrainerStats from '../components/trainer/TrainerStats.vue';
 import { useLalaRuCompositeTrainer } from '../composables/useLalaRuCompositeTrainer.ts';
 import {
   COMPOSITE_ROUTE_LENGTH,
@@ -13,6 +18,10 @@ import { MECHANIC_ICONS, type MechanicIconName } from '../assets/mechanic-icons.
 
 const trainer = useLalaRuCompositeTrainer();
 const deathDialogOpen = ref(false);
+const modeOptions = [
+  { value: 'tutorial', label: '教學模式' },
+  { value: 'battle', label: '實戰模式' }
+] as const;
 const analysisLabels: Readonly<Record<AnalysisDebuff, string>> = {
   front: '正面未解析', back: '背面未解析', left: '左側未解析', right: '右側未解析'
 };
@@ -36,6 +45,24 @@ const resolvedSummary = computed(() => {
   if (trainer.analysisFailed.value) reasons.push('分析方向錯誤');
   return reasons.join('＋') || '失敗';
 });
+const stageBadge = computed(() => trainer.phase.value === 'idle' ? '準備階段' : trainer.phase.value === 'resolved' || trainer.phase.value === 'dead' ? '結算階段' : '進行階段');
+const stageClock = computed(() => trainer.paused.value ? 'Ⅱ PAUSED' : trainer.phase.value === 'idle' ? 'Ⅱ WAITING' : trainer.phase.value === 'resolved' ? '✓ COMPLETE' : trainer.phase.value === 'dead' ? '× FAILED' : '▶ LIVE');
+const stageTitle = computed(() => {
+  if (trainer.paused.value) return '已暫停';
+  if (trainer.phase.value === 'analysis-lead') return '分析賦予・T0 前';
+  if (trainer.phase.value === 'preview') return `預覽 ${COMPOSITE_TIMING.previewDurationMs / 1000} 秒`;
+  if (trainer.phase.value === 'stepping') return `步進 ${trainer.routeCellNumber.value} / ${COMPOSITE_ROUTE_LENGTH}`;
+  if (trainer.phase.value === 'player-rotation') return '玩家旋轉角乘算';
+  if (trainer.phase.value === 'high-precision') return '高精度光彈準備';
+  if (trainer.phase.value === 'dead') return '機制失敗';
+  if (trainer.phase.value === 'resolved') return resolvedSummary.value;
+  return '準備中';
+});
+const stageDescription = computed(() => trainer.phase.value === 'idle'
+  ? '開始後依序處理步進地板、光球分析與魔紋砲。'
+  : trainer.phase.value === 'dead' || trainer.phase.value === 'resolved'
+    ? '本題已依最後位置與面向完成判定。'
+    : '依左側場地提示移動；教學模式可使用下方動畫控制。');
 watch(() => trainer.deathRecord.value, record => {
   deathDialogOpen.value = record !== null;
 });
@@ -53,8 +80,8 @@ onBeforeUnmount(() => document.removeEventListener('contextmenu', preventContext
 </script>
 
 <template>
-  <main class="composite-page">
-    <div class="composite-heading">
+  <main class="trainer-page composite-page">
+    <div class="trainer-heading composite-heading">
       <div>
         <RouterLink class="back-link" to="/">← 回到迷宮一覽</RouterLink>
         <h1>拉拉魯｜複合魔紋</h1>
@@ -68,8 +95,8 @@ onBeforeUnmount(() => document.removeEventListener('contextmenu', preventContext
       <RouterLink class="active" to="/aloalo-island/lalaru/composite-pattern">複合魔紋</RouterLink>
     </nav>
 
-    <div class="composite-layout">
-      <section class="panel composite-arena-panel">
+    <div class="trainer-layout composite-layout">
+      <section class="arena-panel panel composite-arena-panel">
         <LalaRuCompositeArena
           :phase="trainer.phase.value"
           :mode="trainer.mode.value"
@@ -106,16 +133,16 @@ onBeforeUnmount(() => document.removeEventListener('contextmenu', preventContext
         />
       </section>
 
-      <aside class="panel composite-control-panel">
-        <section>
-          <p class="section-kicker">TRAINING MODE</p>
-          <h2>練習設定</h2>
-          <div class="two-way-switch" role="group" aria-label="練習模式">
-            <button type="button" :class="{ active: trainer.mode.value === 'tutorial' }" @click="trainer.setMode('tutorial')">教學模式</button>
-            <button type="button" :class="{ active: trainer.mode.value === 'battle' }" @click="trainer.setMode('battle')">實戰模式</button>
-          </div>
+      <aside class="control-panel panel trainer-control-stack composite-control-panel">
+        <TrainerPracticeSettings title-id="composite-settings-title" kicker="TRAINING MODE">
+          <TrainerSegmentedControl
+            :model-value="trainer.mode.value"
+            :options="modeOptions"
+            label="練習模式"
+            @change="value => trainer.setMode(value as 'tutorial' | 'battle')"
+          />
           <p class="mode-description">{{ trainer.mode.value === 'tutorial' ? '顯示完整路線、危險地板及光球分析角度。' : '只顯示實際箭頭、光球、C 字環與 AoE 演出。' }}</p>
-        </section>
+        </TrainerPracticeSettings>
 
         <section class="composite-analysis-panel">
           <div class="analysis-heading-row">
@@ -135,44 +162,46 @@ onBeforeUnmount(() => document.removeEventListener('contextmenu', preventContext
           <p v-else-if="latestAnalysisResult" class="analysis-battle-count">已完成 {{ trainer.analysisResults.value.length }} / 3 次分析判定</p>
         </section>
 
-        <section class="composite-status-card" aria-live="polite">
-          <div class="status-heading">
-            <span>{{ trainer.phase.value.toUpperCase() }}</span>
-            <strong v-if="trainer.paused.value">已暫停</strong>
-            <strong v-else-if="trainer.phase.value === 'analysis-lead'">分析賦予・T0 前</strong>
-            <strong v-else-if="trainer.phase.value === 'preview'">預覽 {{ COMPOSITE_TIMING.previewDurationMs / 1000 }} 秒</strong>
-            <strong v-else-if="trainer.phase.value === 'stepping'">步進 {{ trainer.routeCellNumber.value }} / {{ COMPOSITE_ROUTE_LENGTH }}</strong>
-            <strong v-else-if="trainer.phase.value === 'player-rotation'">玩家旋轉角乘算</strong>
-            <strong v-else-if="trainer.phase.value === 'high-precision'">高精度光彈準備</strong>
-            <strong v-else-if="trainer.phase.value === 'dead'" class="failure">死亡</strong>
-            <strong v-else-if="trainer.phase.value === 'resolved'" :class="trainer.succeeded.value ? 'success' : 'failure'">{{ resolvedSummary }}</strong>
-            <strong v-else>等待開始</strong>
-          </div>
-          <div v-if="trainer.phase.value === 'preview' && !trainer.paused.value" class="preview-progress"><span :style="{ '--preview-duration': `${COMPOSITE_TIMING.previewDurationMs}ms` }"></span></div>
-          <dl class="status-grid">
+        <section class="hud-section composite-hud" aria-live="polite">
+          <TrainerStats
+            :round="trainer.attempts.value"
+            :wins="trainer.successes.value"
+            round-label="完成"
+            wins-label="成功"
+            :show-streak="false"
+          />
+          <TrainerStageCard :badge="stageBadge" :clock="stageClock" :title="stageTitle" :status="stageDescription">
+            <div
+              v-if="trainer.phase.value === 'preview' && !trainer.paused.value"
+              class="stage-progress is-timed"
+              :style="{ '--stage-duration': `${COMPOSITE_TIMING.previewDurationMs}ms` }"
+            ><span></span></div>
+          <dl class="trainer-info-grid status-grid">
             <div><dt>危險格</dt><dd>{{ trainer.dangerousCells.value.length }} / 20</dd></div>
             <div><dt>光球爆炸</dt><dd>{{ trainer.explosionCount.value }} / 2</dd></div>
             <div><dt>魔紋砲</dt><dd>{{ trainer.bossCannonState.value === 'hidden' ? '—' : trainer.bossCannonState.value === 'waiting' ? '光球爆炸中' : trainer.bossCannonState.value === 'resolved' ? (trainer.bossCannonSucceeded.value ? '通過' : '命中') : trainer.bossCannonState.value === 'resolving' ? '結算' : '預兆' }}</dd></div>
             <div><dt>缺口偏移</dt><dd>{{ trainer.playerRotationState.value === 'applied' ? `${trainer.playerGapRotationDegrees.value > 0 ? '+' : ''}${trainer.playerGapRotationDegrees.value}°` : '尚未乘算' }}</dd></div>
             <div><dt>下次步進</dt><dd>{{ trainer.paused.value || !trainer.nextStepInMs.value ? '—' : `${trainer.nextStepInMs.value / 1000}s` }}</dd></div>
           </dl>
+          </TrainerStageCard>
         </section>
 
         <section v-if="trainer.mode.value === 'tutorial'">
           <p class="section-kicker">TIMELINE CONTROL</p>
           <h2>動畫檢查</h2>
-          <div class="control-grid">
+          <TrainerActionRow class="two-column animation-controls">
             <button class="secondary-button" type="button" :disabled="trainer.phase.value === 'idle' || trainer.phase.value === 'dead' || trainer.phase.value === 'resolved'" @click="trainer.togglePause">{{ trainer.paused.value ? '繼續' : '暫停' }}</button>
             <button class="secondary-button" type="button" :disabled="trainer.phase.value === 'dead' || trainer.phase.value === 'resolved'" @click="trainer.stepForward">逐步播放</button>
             <button class="secondary-button wide" type="button" @click="trainer.replay">從頭重播</button>
-          </div>
+          </TrainerActionRow>
         </section>
 
-        <section class="composite-actions">
-          <div class="score-line"><span>完成 {{ trainer.attempts.value }}</span><span>成功 {{ trainer.successes.value }}</span></div>
+        <section>
+          <TrainerActionRow class="two-column composite-actions">
           <button v-if="trainer.phase.value === 'dead' || trainer.phase.value === 'resolved'" class="secondary-button" type="button" @click="trainer.retry">重試同一題</button>
           <button v-if="trainer.phase.value === 'dead' || trainer.phase.value === 'resolved'" class="primary-button" type="button" @click="trainer.nextQuestion">下一題</button>
           <button v-if="trainer.phase.value === 'idle'" class="primary-button wide" type="button" @click="trainer.start">開始</button>
+          </TrainerActionRow>
         </section>
       </aside>
     </div>
@@ -188,24 +217,9 @@ onBeforeUnmount(() => document.removeEventListener('contextmenu', preventContext
 </template>
 
 <style scoped>
-.composite-page { display: flex; width: min(1440px, calc(100% - 40px)); height: calc(100dvh - 72px); max-height: calc(100dvh - 72px); margin: 0 auto; padding: 8px 0; flex-direction: column; overflow: hidden; user-select: none; -webkit-user-select: none; }
-.composite-heading { display: flex; align-items: end; justify-content: space-between; flex: 0 0 auto; gap: 20px; margin-bottom: 6px; }
-.composite-heading h1 { margin: 2px 0 0; font-size: var(--type-page-title); letter-spacing: -.025em; line-height: 1.15; }
-.composite-heading > div > p:last-child { margin: 0; color: var(--text-helper); font-size: var(--type-body); line-height: var(--leading-compact); }
-.back-link { display: inline-block; margin-bottom: 8px; color: #9ec5d2; font-size: 13px; text-decoration: none; }
-.mechanic-nav { display: flex; flex: 0 0 auto; gap: 7px; margin: 0 0 7px; }
-.mechanic-nav a { padding: 5px 10px; border: 1px solid var(--line-soft); border-radius: 999px; color: var(--text-secondary); background: #101c27; font-size: var(--type-secondary); text-decoration: none; }
-.mechanic-nav a.active { border-color: #4dbbd3; color: #e8fbff; background: #173d49; }
-.composite-layout { display: grid; min-height: 0; flex: 1 1 auto; grid-template-columns: minmax(0, 1.08fr) minmax(420px, .92fr); gap: 11px; align-items: stretch; overflow: hidden; }
-.composite-arena-panel { display: grid; height: 100%; min-height: 0; min-width: 0; padding: 10px; overflow: hidden; place-items: center; container-type: size; }
-.composite-control-panel { display: flex; height: 100%; min-width: 0; flex-direction: column; gap: 12px; padding: 12px; overflow-y: auto; scrollbar-width: none; }
-.composite-control-panel::-webkit-scrollbar { display: none; }
-.composite-control-panel section + section { padding-top: 13px; border-top: 1px solid var(--line-soft); }
+.composite-page { user-select: none; -webkit-user-select: none; }
 .composite-control-panel h2 { margin: 0; font-size: 19px; }
-.two-way-switch { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-top: 10px; }
-.two-way-switch button { padding: 9px; border: 1px solid #3b5363; border-radius: 8px; color: #b9cad3; background: #101c27; cursor: pointer; }
-.two-way-switch button.active { border-color: #5ccbe2; color: #eafcff; background: #1a4655; }
-.mode-description { margin: 8px 0 0; color: var(--text-helper); font-size: 13px; line-height: 1.55; }
+.mode-description { margin: 8px 0 0; color: var(--text-helper); font-size: var(--type-secondary); line-height: var(--leading-body); }
 .analysis-heading-row { display: grid; grid-template-columns: 32px 1fr auto; gap: 9px; align-items: center; }
 .analysis-heading-row img { width: 24px; height: 32px; }
 .analysis-icon-placeholder { width: 24px; height: 32px; }
@@ -215,20 +229,9 @@ onBeforeUnmount(() => document.removeEventListener('contextmenu', preventContext
 .analysis-result-list div { display: flex; justify-content: space-between; gap: 8px; padding: 6px 8px; border: 1px solid currentColor; border-radius: 7px; background: rgba(4, 15, 22, .3); font-size: 11px; }
 .analysis-result-list span { color: var(--text-helper); }
 .analysis-waiting, .analysis-battle-count { margin: 8px 0 0; color: var(--text-helper); font-size: 11px; }
-.composite-status-card { padding: 13px !important; border: 1px solid #345165 !important; border-radius: 10px; background: linear-gradient(135deg, #142a39, #12222e); }
-.status-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-.status-heading span { color: #7ed9ec; font: 750 11px ui-monospace, monospace; letter-spacing: .15em; }
-.status-heading strong { font-size: 14px; }
 .success { color: #74e7aa; } .failure { color: #ff7784; }
-.preview-progress { height: 5px; margin-top: 10px; overflow: hidden; border-radius: 99px; background: #2b4453; }
-.preview-progress span { display: block; width: 100%; height: 100%; background: linear-gradient(90deg, #50cde8, #f5c568); transform-origin: left; animation: preview-progress var(--preview-duration) linear forwards; }
-.status-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 12px 0 0; }
-.status-grid div { padding: 8px; border-radius: 7px; background: rgba(4, 15, 22, .34); }
-.status-grid dt { color: var(--text-helper); font-size: 11px; } .status-grid dd { margin: 3px 0 0; color: #e9faff; font: 700 13px ui-monospace, monospace; }
-.control-grid, .composite-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-top: 10px; }
-.control-grid button, .composite-actions button { padding: 10px; } .wide { grid-column: 1 / -1; }
-.score-line { display: flex; grid-column: 1 / -1; justify-content: space-between; color: var(--text-helper); font: 12px ui-monospace, monospace; }
-@keyframes preview-progress { from { transform: scaleX(0); } to { transform: scaleX(1); } }
-@media (max-width: 860px) { .composite-page { display: block; height: auto; min-height: calc(100dvh - 72px); padding: 18px 0 32px; overflow: visible; } .composite-layout { grid-template-columns: 1fr; } .composite-heading { align-items: start; } .composite-arena-panel { height: auto; container-type: normal; } .composite-control-panel { height: auto; overflow: visible; } }
-@media (max-width: 520px) { .composite-page { width: calc(100% - 20px); padding-top: 14px; } .composite-heading .version-chip { display: none; } .mechanic-nav { overflow-x: auto; } .mechanic-nav a { flex: 0 0 auto; } .composite-arena-panel { padding: 7px; } }
+.composite-hud { margin-top: 0; }
+.status-grid { margin-top: 8px; }
+.animation-controls, .composite-actions { margin-top: 8px; }
+@media (max-width: 520px) { .mechanic-nav { overflow-x: auto; } .mechanic-nav a { flex: 0 0 auto; } }
 </style>

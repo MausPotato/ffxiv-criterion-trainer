@@ -52,12 +52,14 @@ test('cheat sheet visibility can be toggled without changing trainer state', asy
 });
 
 test('desktop LalaRu layout is viewport-bound without a page Y scrollbar', async () => {
-  const source = await readFile(
+  const view = await readFile(
     new URL('../../src/views/LalaRuTrainerView.vue', import.meta.url),
     'utf8'
   );
-  assert.match(source, /\.lalaru-page \{[^}]*height: calc\(100dvh - 72px\);[^}]*overflow: hidden;/);
-  assert.match(source, /@media \(max-width: 860px\)[\s\S]*?\.lalaru-page \{[^}]*height: auto;[^}]*overflow: visible;/);
+  const base = await readFile(new URL('../../src/styles/base.css', import.meta.url), 'utf8');
+  assert.match(view, /<main class="trainer-page lalaru-page">/);
+  assert.match(base, /\.trainer-page \{[^}]*height: calc\(100dvh - 72px\);[^}]*overflow: hidden;/);
+  assert.match(base, /@media \(max-width: 760px\)[\s\S]*?\.trainer-page \{[^}]*height: auto;[^}]*overflow: visible;/);
 });
 
 test('cheat sheet uses the 三沒五有 mnemonic and explicit V wording', async () => {

@@ -79,8 +79,24 @@ test('all LalaRu arenas use the shared camera and player interaction logic', asy
   assert.match(analysisArena, /useLalaRuArenaInteraction/);
   for (const source of [firstArena, compositeArena, analysisArena]) {
     assert.match(source, /PlayerFacingIndicator/);
+    assert.match(source, /TrainerCameraControls/);
     assert.match(source, /getFacingAngle/);
     assert.match(source, /updateFacingAngle/);
+  }
+});
+
+test('LalaRu control panels reuse the shared first-boss settings, status, stats, and action components', async () => {
+  const files = [
+    'LalaRuTrainerView.vue',
+    'LalaRuCompositeTrainerView.vue',
+    'LalaRuAnalysisTrainerView.vue'
+  ];
+  for (const file of files) {
+    const source = await readFile(new URL(`../../src/views/${file}`, import.meta.url), 'utf8');
+    assert.match(source, /TrainerPracticeSettings/);
+    assert.match(source, /TrainerStageCard/);
+    assert.match(source, /TrainerStats/);
+    assert.match(source, /TrainerActionRow/);
   }
 });
 
@@ -131,9 +147,11 @@ test('Ketuduke and both LalaRu pages share the same desktop page width and colum
     new URL('../../src/views/LalaRuAnalysisTrainerView.vue', import.meta.url),
     'utf8'
   );
-  for (const source of [base, firstView, compositeView, analysisView]) {
-    assert.match(source, /width: min\(1440px, calc\(100% - 40px\)\)/);
-    assert.match(source, /grid-template-columns: minmax\(0, 1\.08fr\) minmax\(420px, \.92fr\)/);
+  assert.match(base, /\.trainer-page \{[\s\S]*?width: min\(1440px, calc\(100% - 40px\)\)/);
+  assert.match(base, /\.trainer-layout \{[\s\S]*?grid-template-columns: minmax\(0, 1\.08fr\) minmax\(420px, \.92fr\)/);
+  for (const source of [firstView, compositeView, analysisView]) {
+    assert.match(source, /<main class="trainer-page /);
+    assert.match(source, /<div class="trainer-layout /);
   }
 });
 

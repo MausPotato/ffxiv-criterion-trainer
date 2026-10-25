@@ -1,4 +1,8 @@
 <script setup lang="ts">
+import TrainerStageCard from './TrainerStageCard.vue';
+import TrainerStats from './TrainerStats.vue';
+import TrainerActionRow from './TrainerActionRow.vue';
+
 defineProps<{
   round: number;
   wins: number;
@@ -25,27 +29,21 @@ defineEmits<{
 
 <template>
   <section class="hud-section" aria-label="練習狀態">
-    <div class="hud-grid">
-      <div class="hud-stat"><span>題目</span><strong>{{ round.toString().padStart(2, '0') }}</strong></div>
-      <div class="hud-stat"><span>站位通過</span><strong>{{ wins }}</strong></div>
-      <div class="hud-stat"><span>連勝</span><strong>{{ streak }}</strong></div>
-    </div>
+    <TrainerStats :round="round" :wins="wins" :streak="streak" />
 
-    <div class="stage-card">
-      <div class="stage-topline">
-        <span class="stage-pill">{{ stageBadge }}</span>
-        <span class="stage-clock">{{ clockText }}</span>
-      </div>
-      <h2>{{ stageName }}</h2>
-      <p>{{ status }}</p>
-      <div class="stage-progress"><span :style="{ width: `${progress}%` }"></span></div>
-    </div>
+    <TrainerStageCard
+      :badge="stageBadge"
+      :clock="clockText"
+      :title="stageName"
+      :status="status"
+      :progress="progress"
+    />
 
-    <div class="action-row">
+    <TrainerActionRow>
       <button class="primary-button" type="button" :disabled="confirmDisabled" @click="$emit('confirm')">{{ confirmText }}</button>
       <button class="secondary-button" type="button" :disabled="nextDisabled" @click="$emit('next')">揭示麻將</button>
       <button class="secondary-button" type="button" :disabled="resetDisabled" @click="$emit('reset')">{{ resetText }}</button>
-    </div>
+    </TrainerActionRow>
     <p class="phase-note">作答期間只顯示自己；吹風前站位通過後才揭示隊友並一起回放。</p>
   </section>
 </template>

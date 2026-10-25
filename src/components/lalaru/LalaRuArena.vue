@@ -14,12 +14,10 @@ import {
   type LalaRuPhase,
   type Multiplier
 } from '../../mechanics/lalaru/index.ts';
-import {
-  CAMERA_ROTATION_STEP_DEGREES
-} from '../../presentation/lalaru/camera.ts';
 import { useLalaRuArenaInteraction } from '../../composables/useLalaRuArenaInteraction.ts';
 import RotationCueIcon from './RotationCueIcon.vue';
 import MechanicIcon from '../trainer/MechanicIcon.vue';
+import TrainerCameraControls from '../trainer/TrainerCameraControls.vue';
 import PlayerFacingIndicator from './PlayerFacingIndicator.vue';
 
 const props = defineProps<{
@@ -174,9 +172,7 @@ function actorStyle(point: ArenaPoint, diameter: number): Record<string, string>
 
       <div v-if="phase === 'idle'" class="lalaru-start-overlay">
         <span class="start-rune" aria-hidden="true">✦</span>
-        <button class="primary-button start-button" type="button" @click="emit('start')">
-          ▶ 開始練習
-        </button>
+        <button class="primary-button start-button" type="button" @click="emit('start')">開始練習</button>
         <small>左鍵拖曳角色；右鍵拖曳旋轉視角</small>
       </div>
 
@@ -185,12 +181,14 @@ function actorStyle(point: ArenaPoint, diameter: number): Record<string, string>
       </div>
     </div>
 
-    <div class="camera-controls" aria-label="視角控制">
-      <button type="button" @click="rotateCameraBy(-CAMERA_ROTATION_STEP_DEGREES)">↺ 逆時針 90°</button>
-      <button type="button" @click="resetCamera">北向上・重置視角</button>
-      <button type="button" @click="rotateCameraBy(CAMERA_ROTATION_STEP_DEGREES)">↻ 順時針 90°</button>
-    </div>
-    <p class="camera-readout">右鍵水平拖曳自由旋轉 · {{ Math.round(cameraRotation) }}°</p>
+    <TrainerCameraControls
+      class="camera-controls-shell"
+      :rotation="cameraRotation"
+      reset-label="北向上・重置視角"
+      instructions="右鍵水平拖曳自由旋轉"
+      @rotate="rotateCameraBy"
+      @reset="resetCamera"
+    />
   </div>
 </template>
 
@@ -252,20 +250,10 @@ function actorStyle(point: ArenaPoint, diameter: number): Record<string, string>
 .arena-result { position: absolute; top: 6%; left: 50%; z-index: 10; padding: 7px 18px; border: 1px solid currentColor; border-radius: 999px; background: rgba(6, 18, 25, .88); font: 900 14px ui-monospace, monospace; letter-spacing: .15em; transform: translateX(-50%); }
 .arena-result.success { color: #7cebb4; }
 .arena-result.failure { color: #ff7b88; }
-.camera-controls { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; width: min(100%, 680px, calc(100cqh - 58px)); margin-top: 10px; }
-.camera-controls button { min-height: 36px; padding: 7px 9px; border: 1px solid #3b596a; border-radius: 8px; color: #c7dbe3; background: #10212d; cursor: pointer; font-size: 12px; }
-.camera-controls button:hover { border-color: #5dc8df; color: #f1fcff; background: #173442; }
-.camera-controls button:focus-visible { outline: 2px solid #68d7ed; outline-offset: 2px; }
-.camera-readout { width: min(100%, 680px, calc(100cqh - 58px)); margin: 6px 0 0; color: var(--text-helper); font: 11px ui-monospace, monospace; text-align: center; }
 @keyframes impact-flash { 0% { opacity: .2; } 28% { opacity: 1; } 100% { opacity: .84; } }
 
 @media (max-width: 860px) {
   .lalaru-arena-shell { height: auto; }
-  .lalaru-camera-viewport, .camera-controls, .camera-readout { width: min(100%, 680px); }
-}
-
-@media (max-width: 520px) {
-  .camera-controls { grid-template-columns: 1fr 1fr; }
-  .camera-controls button:nth-child(2) { grid-column: 1 / -1; grid-row: 2; }
+  .lalaru-camera-viewport, .camera-controls-shell { width: min(100%, 680px); }
 }
 </style>
