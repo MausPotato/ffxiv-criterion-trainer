@@ -1,12 +1,10 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed } from 'vue';
 import {
   LALARU_BOSS_POSITION,
   LALARU_FIELD_SIZE,
   LALARU_PLAYER_RADIUS,
   attackSectorPath,
-  clampLalaRuPlayerPosition,
-  playerPositionFromDrag,
   safeBoundaryLines,
   safeSectorPath,
   type ArenaPoint,
@@ -17,18 +15,18 @@ import {
   type Multiplier
 } from '../../mechanics/lalaru/index.ts';
 import {
-  CAMERA_ROTATION_STEP_DEGREES,
-  cameraPointToWorldPoint,
-  cameraRotationDeltaFromHorizontalDrag,
-  normalizeCameraRotation
+  CAMERA_ROTATION_STEP_DEGREES
 } from '../../presentation/lalaru/camera.ts';
+import { useLalaRuArenaInteraction } from '../../composables/useLalaRuArenaInteraction.ts';
 import RotationCueIcon from './RotationCueIcon.vue';
 import MechanicIcon from '../trainer/MechanicIcon.vue';
+import PlayerFacingIndicator from './PlayerFacingIndicator.vue';
 
 const props = defineProps<{
   phase: LalaRuPhase;
   mode: LalaRuMode;
   playerPosition: ArenaPoint;
+  playerFacingAngle: number;
   arrowSide: ArrowSide;
   multiplier: Multiplier;
   dotCount: number;
@@ -41,20 +39,30 @@ const props = defineProps<{
 const emit = defineEmits<{
   start: [];
   updatePlayerPosition: [position: ArenaPoint];
+  updatePlayerFacingAngle: [facingAngle: number];
 }>();
 
-const cameraViewport = ref<HTMLElement | null>(null);
-const dragging = ref(false);
-let pointerId: number | null = null;
-let grabOffset: ArenaPoint = { x: 0, y: 0 };
-const cameraRotation = ref(0);
-const rotatingCamera = ref(false);
-let cameraPointerId: number | null = null;
-let lastCameraPointerX = 0;
-
-const cameraStyle = computed(() => ({
-  '--camera-rotation': `${cameraRotation.value}deg`
-}));
+const {
+  cameraViewport,
+  dragging,
+  cameraRotation,
+  rotatingCamera,
+  cameraStyle,
+  beginPlayerDrag: beginDrag,
+  movePlayer,
+  endPlayerDrag: endDrag,
+  rotateCameraBy,
+  beginCameraDrag,
+  moveCamera,
+  endCameraDrag,
+  resetCamera
+} = useLalaRuArenaInteraction({
+  getPlayerPosition: () => props.playerPosition,
+  canMove: () => props.phase !== 'resolved',
+  updatePlayerPosition: position => emit('updatePlayerPosition', position),
+  getFacingAngle: () => props.playerFacingAngle,
+  updateFacingAngle: facingAngle => emit('updatePlayerFacingAngle', facingAngle)
+});
 
 const displayedSafeDirection = computed(() =>
   props.phase === 'resolved' ? props.finalSafeDirection : props.initialSafeDirection
@@ -72,97 +80,6 @@ function actorStyle(point: ArenaPoint, diameter: number): Record<string, string>
   };
 }
 
-function pointerArenaPosition(event: PointerEvent): ArenaPoint | null {
-  const bounds = cameraViewport.value?.getBoundingClientRect();
-  if (!bounds?.width || !bounds.height) return null;
-  const cameraPoint = {
-    x: (event.clientX - bounds.left) / bounds.width * LALARU_FIELD_SIZE,
-    y: (event.clientY - bounds.top) / bounds.height * LALARU_FIELD_SIZE
-  };
-  return cameraPointToWorldPoint(cameraPoint, cameraRotation.value);
-}
-
-function beginDrag(event: PointerEvent): void {
-  if (event.button !== 0 || props.phase === 'resolved' || pointerId !== null) return;
-  const pointer = pointerArenaPosition(event);
-  if (!pointer) return;
-  pointerId = event.pointerId;
-  dragging.value = true;
-  grabOffset = {
-    x: pointer.x - props.playerPosition.x,
-    y: pointer.y - props.playerPosition.y
-  };
-  (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
-  event.preventDefault();
-}
-
-function rotateCameraBy(degrees: number): void {
-  cameraRotation.value = normalizeCameraRotation(cameraRotation.value + degrees);
-}
-
-function beginCameraDrag(event: PointerEvent): void {
-  if (event.button !== 2 || cameraPointerId !== null) return;
-  cameraPointerId = event.pointerId;
-  rotatingCamera.value = true;
-  lastCameraPointerX = event.clientX;
-  (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
-  event.preventDefault();
-}
-
-function moveCamera(event: PointerEvent): void {
-  if (event.pointerId !== cameraPointerId) return;
-  const deltaX = event.clientX - lastCameraPointerX;
-  lastCameraPointerX = event.clientX;
-  rotateCameraBy(cameraRotationDeltaFromHorizontalDrag(deltaX));
-  event.preventDefault();
-}
-
-function endCameraDrag(event: PointerEvent): void {
-  if (event.pointerId !== cameraPointerId) return;
-  const target = event.currentTarget as HTMLElement;
-  if (target.hasPointerCapture(event.pointerId)) target.releasePointerCapture(event.pointerId);
-  cameraPointerId = null;
-  rotatingCamera.value = false;
-  event.preventDefault();
-}
-
-function resetCamera(): void {
-  cameraRotation.value = 0;
-}
-
-function movePlayer(event: PointerEvent): void {
-  if (event.pointerId !== pointerId) return;
-  const pointer = pointerArenaPosition(event);
-  if (!pointer) return;
-  emit('updatePlayerPosition', playerPositionFromDrag(pointer, grabOffset));
-  event.preventDefault();
-}
-
-function endDrag(event: PointerEvent): void {
-  if (event.pointerId !== pointerId) return;
-  const target = event.currentTarget as HTMLElement;
-  if (target.hasPointerCapture(event.pointerId)) target.releasePointerCapture(event.pointerId);
-  pointerId = null;
-  dragging.value = false;
-  event.preventDefault();
-}
-
-function moveWithKeyboard(event: KeyboardEvent): void {
-  if (props.phase === 'resolved') return;
-  const movements: Partial<Record<string, ArenaPoint>> = {
-    ArrowUp: { x: 0, y: -0.15 },
-    ArrowDown: { x: 0, y: 0.15 },
-    ArrowLeft: { x: -0.15, y: 0 },
-    ArrowRight: { x: 0.15, y: 0 }
-  };
-  const movement = movements[event.key];
-  if (!movement) return;
-  emit('updatePlayerPosition', clampLalaRuPlayerPosition({
-    x: props.playerPosition.x + movement.x,
-    y: props.playerPosition.y + movement.y
-  }));
-  event.preventDefault();
-}
 </script>
 
 <template>
@@ -235,8 +152,8 @@ function moveWithKeyboard(event: KeyboardEvent): void {
           @pointermove="movePlayer"
           @pointerup="endDrag"
           @pointercancel="endDrag"
-          @keydown="moveWithKeyboard"
         >
+          <PlayerFacingIndicator :facing-angle="playerFacingAngle" />
           <span>YOU</span>
         </button>
       </div>

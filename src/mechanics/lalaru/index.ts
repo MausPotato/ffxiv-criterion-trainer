@@ -3,3 +3,7 @@ export * from './solver.ts';
 export * from './geometry.ts';
 export * from './generation.ts';
 export * from './timing.ts';
+export * from './composite-pattern.ts';
+export * from './composite-timing.ts';
+export * from './analysis.ts';
+export * from './analysis-timing.ts';

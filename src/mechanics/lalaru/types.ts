@@ -16,5 +16,11 @@ export interface LalaRuQuestion {
   dotPattern: 3 | 5;
 }
 
+export interface RotationMultiplicationCue {
+  arrowSide: ArrowSide;
+  multiplier: Multiplier;
+  dotPattern: 3 | 5;
+}
+
 export type LalaRuPhase = 'idle' | 'casting' | 'resolved';
 export type LalaRuMode = 'tutorial' | 'battle';

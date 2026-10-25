@@ -34,6 +34,7 @@ export function useLalaRuTrainer(options: LalaRuTrainerOptions = {}) {
   const phase = ref<LalaRuPhase>('idle');
   const mode = ref<LalaRuMode>('tutorial');
   const playerPosition = ref<ArenaPoint>({ ...LALARU_PLAYER_START });
+  const playerFacingAngle = ref(0);
   const settlementPosition = ref<ArenaPoint | null>(null);
   const dotCount = ref<number>(question.value.dotPattern);
   const animationKey = ref(0);
@@ -95,6 +96,7 @@ export function useLalaRuTrainer(options: LalaRuTrainerOptions = {}) {
     clearTimers();
     phase.value = 'idle';
     playerPosition.value = { ...LALARU_PLAYER_START };
+    playerFacingAngle.value = 0;
     settlementPosition.value = null;
     dotCount.value = question.value.dotPattern;
     animationKey.value += 1;
@@ -105,6 +107,7 @@ export function useLalaRuTrainer(options: LalaRuTrainerOptions = {}) {
     question.value = questionFactory();
     phase.value = 'idle';
     playerPosition.value = { ...LALARU_PLAYER_START };
+    playerFacingAngle.value = 0;
     settlementPosition.value = null;
     dotCount.value = question.value.dotPattern;
     animationKey.value += 1;
@@ -113,6 +116,11 @@ export function useLalaRuTrainer(options: LalaRuTrainerOptions = {}) {
   function setPlayerPosition(position: ArenaPoint): void {
     if (!canMove.value) return;
     playerPosition.value = position;
+  }
+
+  function setPlayerFacingAngle(facingAngle: number): void {
+    if (!canMove.value) return;
+    playerFacingAngle.value = facingAngle;
   }
 
   function setMode(nextMode: LalaRuMode): void {
@@ -126,6 +134,7 @@ export function useLalaRuTrainer(options: LalaRuTrainerOptions = {}) {
     phase,
     mode,
     playerPosition,
+    playerFacingAngle,
     settlementPosition,
     dotCount,
     animationKey,
@@ -140,6 +149,7 @@ export function useLalaRuTrainer(options: LalaRuTrainerOptions = {}) {
     retry,
     nextQuestion,
     setPlayerPosition,
+    setPlayerFacingAngle,
     setMode
   };
 }

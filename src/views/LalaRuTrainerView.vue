@@ -29,16 +29,15 @@ onBeforeUnmount(() => document.removeEventListener('contextmenu', preventContext
     <div class="lalaru-heading">
       <div>
         <RouterLink class="back-link" to="/">← 回到迷宮一覽</RouterLink>
-        <p class="section-kicker">ANOTHER ALOALO ISLAND · BOSS 02</p>
         <h1>拉拉魯｜旋轉角乘算</h1>
         <p>觀察頭頂旋轉提示與乘算 Icon，走進最終 90° 安全區。</p>
       </div>
       <span class="version-chip">FIRST MECHANIC · PREVIEW</span>
     </div>
 
-    <nav class="mechanic-nav" aria-label="阿羅阿羅島 Boss 與機制">
-      <RouterLink to="/aloalo-island/ketuduke">一王・凱圖嘟凱</RouterLink>
-      <RouterLink class="active" to="/aloalo-island/lalaru/rotation">二王・拉拉魯第一機制</RouterLink>
+    <nav class="mechanic-nav" aria-label="拉拉魯機制選擇">
+      <RouterLink class="active" to="/aloalo-island/lalaru/rotation">旋轉角乘算</RouterLink>
+      <RouterLink to="/aloalo-island/lalaru/composite-pattern">複合魔紋</RouterLink>
     </nav>
 
     <div class="lalaru-layout">
@@ -47,6 +46,7 @@ onBeforeUnmount(() => document.removeEventListener('contextmenu', preventContext
           :phase="trainer.phase.value"
           :mode="trainer.mode.value"
           :player-position="trainer.playerPosition.value"
+          :player-facing-angle="trainer.playerFacingAngle.value"
           :arrow-side="trainer.question.value.arrowSide"
           :multiplier="trainer.question.value.multiplier"
           :dot-count="trainer.dotCount.value"
@@ -56,6 +56,7 @@ onBeforeUnmount(() => document.removeEventListener('contextmenu', preventContext
           :succeeded="trainer.succeeded.value"
           @start="trainer.start"
           @update-player-position="trainer.setPlayerPosition"
+          @update-player-facing-angle="trainer.setPlayerFacingAngle"
         />
       </section>
 
@@ -167,17 +168,17 @@ onBeforeUnmount(() => document.removeEventListener('contextmenu', preventContext
 </template>
 
 <style scoped>
-.lalaru-page { display: flex; width: min(1320px, calc(100% - 40px)); height: calc(100dvh - 72px); margin: 0 auto; padding: 14px 0; flex-direction: column; overflow: hidden; user-select: none; -webkit-user-select: none; }
-.lalaru-heading { display: flex; align-items: end; justify-content: space-between; gap: 20px; }
-.lalaru-heading h1 { margin: 3px 0 5px; font-size: clamp(24px, 3vw, 34px); }
-.lalaru-heading > div > p:last-child { margin: 0; color: var(--text-secondary); }
+.lalaru-page { display: flex; width: min(1440px, calc(100% - 40px)); height: calc(100dvh - 72px); max-height: calc(100dvh - 72px); margin: 0 auto; padding: 8px 0; flex-direction: column; overflow: hidden; user-select: none; -webkit-user-select: none; }
+.lalaru-heading { display: flex; align-items: end; justify-content: space-between; flex: 0 0 auto; gap: 20px; margin-bottom: 6px; }
+.lalaru-heading h1 { margin: 2px 0 0; font-size: var(--type-page-title); letter-spacing: -.025em; line-height: 1.15; }
+.lalaru-heading > div > p:last-child { margin: 0; color: var(--text-helper); font-size: var(--type-body); line-height: var(--leading-compact); }
 .back-link { display: inline-block; margin-bottom: 8px; color: #9ec5d2; font-size: 13px; text-decoration: none; }
-.mechanic-nav { display: flex; gap: 8px; margin: 10px 0; }
-.mechanic-nav a { padding: 8px 13px; border: 1px solid var(--line); border-radius: 999px; color: var(--text-helper); font-size: 13px; text-decoration: none; }
+.mechanic-nav { display: flex; flex: 0 0 auto; gap: 7px; margin: 0 0 7px; }
+.mechanic-nav a { padding: 5px 10px; border: 1px solid var(--line-soft); border-radius: 999px; color: var(--text-secondary); background: #101c27; font-size: var(--type-secondary); text-decoration: none; }
 .mechanic-nav a.active { border-color: #4dbbd3; color: #e8fbff; background: #173d49; }
-.lalaru-layout { display: grid; min-height: 0; flex: 1; grid-template-columns: minmax(0, 1.45fr) minmax(320px, .75fr); gap: 12px; align-items: stretch; }
-.lalaru-arena-panel { display: grid; height: 100%; min-height: 0; min-width: 0; padding: 14px; overflow: hidden; place-items: center; container-type: size; }
-.lalaru-control-panel { display: flex; height: 100%; min-width: 0; flex-direction: column; gap: 12px; padding: 16px; overflow-y: auto; scrollbar-width: none; }
+.lalaru-layout { display: grid; min-height: 0; flex: 1 1 auto; grid-template-columns: minmax(0, 1.08fr) minmax(420px, .92fr); gap: 11px; align-items: stretch; overflow: hidden; }
+.lalaru-arena-panel { display: grid; height: 100%; min-height: 0; min-width: 0; padding: 10px; overflow: hidden; place-items: center; container-type: size; }
+.lalaru-control-panel { display: flex; height: 100%; min-width: 0; flex-direction: column; gap: 12px; padding: 12px; overflow-y: auto; scrollbar-width: none; }
 .lalaru-control-panel::-webkit-scrollbar { display: none; }
 .lalaru-control-panel section + section { padding-top: 13px; border-top: 1px solid var(--line-soft); }
 .lalaru-control-panel h2 { margin: 0; font-size: 19px; }
