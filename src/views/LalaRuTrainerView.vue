@@ -56,6 +56,7 @@ onBeforeUnmount(() => document.removeEventListener('contextmenu', preventContext
     <nav class="mechanic-nav" aria-label="拉拉魯機制選擇">
       <RouterLink class="active" to="/aloalo-island/lalaru/rotation">旋轉角乘算</RouterLink>
       <RouterLink to="/aloalo-island/lalaru/composite-pattern">複合魔紋</RouterLink>
+      <RouterLink to="/aloalo-island/lalaru/planar-mines">平面爆雷</RouterLink>
     </nav>
 
     <div class="trainer-layout lalaru-layout">

@@ -34,9 +34,11 @@ export function rightAngleMarkerPosition(
   arrowSide: ArrowSide,
   dotCount: number
 ): RightAnglePosition {
+  if (dotCount <= 0) return 'top';
   return dotCount % 2 === 1 ? 'top' : triangleDestinationSide(arrowSide);
 }
 
 export function countdownDotLayout(count: number): readonly DotPosition[] {
+  if (count <= 0) return [];
   return DOT_LAYOUTS[count] ?? DOT_LAYOUTS[1]!;
 }

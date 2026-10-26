@@ -22,6 +22,7 @@ export interface LalaRuArenaInteractionOptions {
   updatePlayerPosition: (position: ArenaPoint) => void;
   getFacingAngle?: () => number;
   updateFacingAngle?: (facingAngle: number) => void;
+  canRotateCamera?: () => boolean;
 }
 
 export function useLalaRuArenaInteraction(options: LalaRuArenaInteractionOptions) {
@@ -87,11 +88,13 @@ export function useLalaRuArenaInteraction(options: LalaRuArenaInteractionOptions
   }
 
   function rotateCameraBy(degrees: number): void {
+    if (options.canRotateCamera && !options.canRotateCamera()) return;
     cameraRotation.value = normalizeCameraRotation(cameraRotation.value + degrees);
   }
 
   function beginCameraDrag(event: PointerEvent): void {
-    if (event.button !== 2 || cameraPointerId !== null) return;
+    if (event.button !== 2 || cameraPointerId !== null
+      || (options.canRotateCamera && !options.canRotateCamera())) return;
     cameraPointerId = event.pointerId;
     rotatingCamera.value = true;
     lastCameraPointerX = event.clientX;

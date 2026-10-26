@@ -4,6 +4,11 @@ import analysisFront from './lalaru-analysis-front.png';
 import analysisBack from './lalaru-analysis-back.png';
 import analysisLeft from './lalaru-analysis-left.png';
 import analysisRight from './lalaru-analysis-right.png';
+import subtractionOne from './lalaru-subtraction-1.png';
+import subtractionTwo from './lalaru-subtraction-2.png';
+import subtractionThree from './lalaru-subtraction-3.png';
+import lalaruStack from './lalaru-stack.png';
+import lalaruForward from './lalaru-forward.png';
 
 const SOURCE_MECHANIC_ICONS = {
   spread: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAgCAYAAAAIXrg4AAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAL4SURBVEhL7ZbRldwgDEW3g0kHkw6cDkgHpAOXQDrwlkAJLoESXIJLcAmUkHcFePB4ZrKb/OQjOkdrFknvCSFg3v7LPyVfpF+l3/5SwQBrlwY8S/Plcnmq2D/gs1UsME0gSN77vKQlL8t60G3LeV03jY/KHLZ7/yQM5zxEkNhKYNqmMOeAjjGP+o4hmcZZgQKL85bDVJRxmVt3P4tRrGGE2FZiq6BuG5M4FG0ESx6nNcekTNds336MzXzwJabGk6Qw0RuBGX1HMBaCOW0CqsCURGrgMRdbR+A16SvGmUAGjN7jiKbsg1KVzEvOMuWo71THzCH4eJGYP3EV50TgXMyD6ZydT9mN2qywKcsCBLhMpowRSPAxX8UMSg4MsM4EZkRxXPIwrnlQ8BBugHz78aDSYR9G+Xn5Q6J4sE4EQRsGMB2CTMrUggFhDyowYuAq025rq1QsGCGuZ4Kk3QtRDspmD9DXQACre7CDd3O775gNA6wTwSRWnRE5yPGuLD1grwcfJaIjUDEerMCp5oAnNQ6OfVkawEtwrcBiZQPrCYGW94BgaqXq9NMELIvlcYCsRApAHoE3PeyVYl6WyDZZ90y/yQbed5L+vyc8kCj26SYHHdG+Ta3l6G8IuhUhO/Gd7WWbHg5aO2wcnr5ttfzDvqgt7UCar9RiuQkeHDS7KtQe7bpoJPuKuqwb4VQzbsAWK4zHV4WbZGx6I0EMnEOkTdR9ZuNGsoMTU+PB6gn4Y+/BgcRWwoNDlmxeaUPUOk1zZjOCI3h9D/YHh2ctDsOQJ6FwlxeiugqVgO4q7de6RGM6zspTsifGHhthXK8DBO8V24SBJi5y9HnSTccD4hRMd5UWvm0m4zLH+1t8eSqdcwK2h/9nxTwIE+xHxMn7IIBkD7y1sJXipswVmx4aPzZgsgbjBN5LI5r5GRKCagpIXRHKmDls9aeKkvo9cC84ot+l6XK5GhilK+XbgVP1af6fFoLohB9SwOgMlDFz2P4I+F5ahgA20A8Av739Alu68Q9Z3ct5AAAAAElFTkSuQmCC',
@@ -23,7 +28,12 @@ export const MECHANIC_ICONS = {
   analysisFront,
   analysisBack,
   analysisLeft,
-  analysisRight
+  analysisRight,
+  subtractionOne,
+  subtractionTwo,
+  subtractionThree,
+  lalaruStack,
+  lalaruForward
 } as const;
 
 export type MechanicIconName = keyof typeof MECHANIC_ICONS;

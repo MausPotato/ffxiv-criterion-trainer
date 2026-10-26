@@ -4,6 +4,7 @@ import KetudukeTrainerView from '../views/KetudukeTrainerView.vue';
 import LalaRuTrainerView from '../views/LalaRuTrainerView.vue';
 import LalaRuCompositeTrainerView from '../views/LalaRuCompositeTrainerView.vue';
 import LalaRuAnalysisTrainerView from '../views/LalaRuAnalysisTrainerView.vue';
+import LalaRuPlanarMinesTrainerView from '../views/LalaRuPlanarMinesTrainerView.vue';
 
 export const router = createRouter({
   history: createWebHistory(),
@@ -33,6 +34,11 @@ export const router = createRouter({
       path: '/aloalo-island/lalaru/analysis',
       name: 'lalaru-analysis-trainer',
       component: LalaRuAnalysisTrainerView
+    },
+    {
+      path: '/aloalo-island/lalaru/planar-mines',
+      name: 'lalaru-planar-mines-trainer',
+      component: LalaRuPlanarMinesTrainerView
     },
     {
       path: '/dungeons/aloalo-island/bosses/ketuduke/mechanics/queue-method',

@@ -7,3 +7,5 @@ export * from './composite-pattern.ts';
 export * from './composite-timing.ts';
 export * from './analysis.ts';
 export * from './analysis-timing.ts';
+export * from './planar-mines.ts';
+export * from './planar-mines-resolution.ts';
