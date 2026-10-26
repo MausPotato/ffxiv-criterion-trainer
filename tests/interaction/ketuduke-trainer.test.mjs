@@ -23,7 +23,7 @@ const FIXED_QUESTION = {
     { r: 3, c: 0, o: 'v', q: 2 },
     { r: 3, c: 3, o: 'h', q: 3 }
   ],
-  buffs: { MT: 'bubble', H: 'bubble', D1: 'bind', D2: 'bind' },
+  buffs: { T: 'bubble', H: 'bubble', D1: 'bind', D2: 'bind' },
   party: '分散',
   rotation: 'cw'
 };
@@ -35,7 +35,7 @@ const STACK_QUESTION = {
 
 const DD_BUBBLE_QUESTION = {
   ...FIXED_QUESTION,
-  buffs: { MT: 'bind', H: 'bind', D1: 'bubble', D2: 'bubble' }
+  buffs: { T: 'bind', H: 'bind', D1: 'bubble', D2: 'bubble' }
 };
 
 const UNSOLVABLE_CRYSTAL_QUESTION = {
@@ -88,19 +88,19 @@ function createTrainer(fixedQuestion = FIXED_QUESTION) {
     scheduler,
     questionFactory: () => structuredClone(fixedQuestion)
   });
-  trainer.selectRole('MT');
+  trainer.selectRole('T');
   return { trainer, scheduler };
 }
 
 function completeUntimedPositioning(trainer, question = FIXED_QUESTION) {
-  const solution = solveParty(question, 'MT');
+  const solution = solveParty(question, 'T');
   assert.ok(solution);
   trainer.setTimed(false);
   trainer.start();
-  trainer.selectCell(autoQueue(question).MT);
+  trainer.selectCell(autoQueue(question).T);
   trainer.confirm();
   trainer.nextStep();
-  trainer.selectCell(solution.pre.MT);
+  trainer.selectCell(solution.pre.T);
   trainer.confirm();
   return solution;
 }
@@ -132,7 +132,7 @@ test('does not schedule or count down before the player presses start', () => {
 
 test('early queue confirmation immediately starts a complete five-second pre-position window', () => {
   const { trainer, scheduler } = createTrainer();
-  const queueCell = autoQueue(FIXED_QUESTION).MT;
+  const queueCell = autoQueue(FIXED_QUESTION).T;
   trainer.start();
   assert.equal(trainer.queueStartedAtMs.value, 0);
   assert.equal(trainer.queueDeadlineAtMs.value, 5_000);
@@ -161,25 +161,25 @@ test('early queue confirmation immediately starts a complete five-second pre-pos
 test('correct queue at 4.9 seconds passes, remains visible, and pre-position at 4.9 seconds passes', () => {
   const { trainer, scheduler } = createTrainer();
   const queueAnswer = autoQueue(FIXED_QUESTION);
-  const solution = solveParty(FIXED_QUESTION, 'MT');
+  const solution = solveParty(FIXED_QUESTION, 'T');
   assert.ok(solution);
 
   trainer.start();
   scheduler.advanceTo(4_900);
-  trainer.selectCell(queueAnswer.MT);
-  assert.equal(trainer.displayPosition.value, queueAnswer.MT);
+  trainer.selectCell(queueAnswer.T);
+  assert.equal(trainer.displayPosition.value, queueAnswer.T);
   scheduler.advanceTo(5_000);
   assert.equal(trainer.phase.value, 1);
   assert.equal(trainer.stageStartedAtMs.value, 5_000);
   assert.equal(trainer.stageDeadlineAtMs.value, 10_000);
   assert.equal(trainer.queueDeadlineAtMs.value, 5_000);
   assert.equal(trainer.preDeadlineAtMs.value, 10_000);
-  assert.equal(trainer.displayPosition.value, queueAnswer.MT, 'automatic queue confirmation keeps the player visible');
+  assert.equal(trainer.displayPosition.value, queueAnswer.T, 'automatic queue confirmation keeps the player visible');
   assert.deepEqual(trainer.queue.value, queueAnswer);
 
   scheduler.advanceTo(9_900);
-  trainer.selectCell(solution.pre.MT);
-  assert.equal(trainer.displayPosition.value, solution.pre.MT, 'the player moves only after choosing a pre-position');
+  trainer.selectCell(solution.pre.T);
+  assert.equal(trainer.displayPosition.value, solution.pre.T, 'the player moves only after choosing a pre-position');
   scheduler.advanceTo(10_000);
 
   assert.equal(trainer.phase.value, 2);
@@ -187,7 +187,7 @@ test('correct queue at 4.9 seconds passes, remains visible, and pre-position at 
   assert.equal(trainer.hasChecked.value, true);
   assert.equal(trainer.preConfirmed.value, true);
   assert.deepEqual(trainer.queue.value, queueAnswer);
-  assert.equal(trainer.pre.value.MT, solution.pre.MT);
+  assert.equal(trainer.pre.value.T, solution.pre.T);
   assert.equal(trainer.wins.value, 0, 'wins are awarded only after wind resolution');
   assert.equal(trainer.replayActive.value, true);
   assert.equal(trainer.windStep.value, 1);
@@ -249,7 +249,7 @@ test('enabled wind replay animates two movement-and-hold rounds and settles matc
   assert.deepEqual(trainer.windEffects.value, []);
   assert.deepEqual(trainer.mahjongCues.value, [], 'settlement keeps mahjong dots removed');
   assert.deepEqual(trainer.visiblePositions.value, solution.final);
-  assert.equal(trainer.settlement.value?.personalPosition, solution.final.MT);
+  assert.equal(trainer.settlement.value?.personalPosition, solution.final.T);
   assert.equal(trainer.settlement.value?.groupOk, true);
   assert.equal(trainer.settlement.value?.allPlayersSafe, true);
   assert.equal(trainer.settlement.value?.valid, true);
@@ -319,16 +319,16 @@ test('disabled wind animation settles immediately with the same role and crystal
   assert.equal(scheduler.tasks.size, 0);
 });
 
-test('stack settlement validates MT with D1 and H with D2', () => {
+test('stack settlement validates T with D1 and H with D2', () => {
   const { trainer } = createTrainer(STACK_QUESTION);
   trainer.setShowWind(false);
   const solution = completeUntimedPositioning(trainer, STACK_QUESTION);
 
-  assert.equal(solution.final.MT, solution.final.D1);
+  assert.equal(solution.final.T, solution.final.D1);
   assert.equal(solution.final.H, solution.final.D2);
-  assert.notEqual(solution.final.MT, solution.final.H);
+  assert.notEqual(solution.final.T, solution.final.H);
   assert.equal(trainer.settlement.value?.groupOk, true);
-  assert.match(trainer.settlement.value?.groupDetail ?? '', /MT＋D1、H＋D2/);
+  assert.match(trainer.settlement.value?.groupDetail ?? '', /T＋D1、H＋D2/);
   assert.equal(trainer.settlement.value?.valid, true);
 });
 
@@ -394,7 +394,7 @@ test('disposing the trainer scope clears every replay callback', () => {
       scheduler,
       questionFactory: () => structuredClone(FIXED_QUESTION)
     });
-    trainer.selectRole('MT');
+    trainer.selectRole('T');
   });
   completeUntimedPositioning(trainer);
   assert.equal(scheduler.tasks.size, 3);
@@ -461,7 +461,7 @@ test('an unanswered queue window dies at five seconds', () => {
 test('an unfinished pre-position window dies five seconds after entering phase two', () => {
   const { trainer, scheduler } = createTrainer();
   trainer.start();
-  trainer.selectCell(autoQueue(FIXED_QUESTION).MT);
+  trainer.selectCell(autoQueue(FIXED_QUESTION).T);
   trainer.confirm();
 
   assert.equal(trainer.phase.value, 1);
@@ -473,7 +473,7 @@ test('an unfinished pre-position window dies five seconds after entering phase t
   assert.equal(trainer.death.value.open, true);
   assert.match(trainer.death.value.reason, /請選自己的吹風前站位/);
   assert.deepEqual(trainer.queue.value, autoQueue(FIXED_QUESTION));
-  assert.equal(trainer.displayPosition.value, autoQueue(FIXED_QUESTION).MT);
+  assert.equal(trainer.displayPosition.value, autoQueue(FIXED_QUESTION).T);
 });
 
 test('late input cannot beat a delayed queue timer callback', () => {
@@ -481,10 +481,10 @@ test('late input cannot beat a delayed queue timer callback', () => {
   trainer.start();
 
   scheduler.elapseWithoutCallbacks(5_001);
-  trainer.selectCell(autoQueue(FIXED_QUESTION).MT);
+  trainer.selectCell(autoQueue(FIXED_QUESTION).T);
 
   assert.equal(trainer.death.value.open, true);
-  assert.equal(trainer.queue.value.MT, undefined, 'the late queue selection is not recorded');
+  assert.equal(trainer.queue.value.T, undefined, 'the late queue selection is not recorded');
   assert.equal(trainer.phase.value, 0);
   assert.equal(scheduler.tasks.size, 0);
 });
@@ -492,20 +492,20 @@ test('late input cannot beat a delayed queue timer callback', () => {
 test('late input cannot overwrite the locked queue answer during the second stage', () => {
   const { trainer, scheduler } = createTrainer();
   const queueAnswer = autoQueue(FIXED_QUESTION);
-  const solution = solveParty(FIXED_QUESTION, 'MT');
+  const solution = solveParty(FIXED_QUESTION, 'T');
   assert.ok(solution);
 
   trainer.start();
-  trainer.selectCell(queueAnswer.MT);
+  trainer.selectCell(queueAnswer.T);
   trainer.confirm();
   const lockedQueue = { ...trainer.queue.value };
 
   scheduler.elapseWithoutCallbacks(5_001);
-  trainer.selectCell(solution.pre.MT);
+  trainer.selectCell(solution.pre.T);
 
   assert.equal(trainer.death.value.open, true);
   assert.deepEqual(trainer.queue.value, lockedQueue, 'the first-stage answer remains unchanged');
-  assert.equal(trainer.pre.value.MT, undefined, 'the late pre-position is not recorded');
+  assert.equal(trainer.pre.value.T, undefined, 'the late pre-position is not recorded');
   assert.equal(scheduler.tasks.size, 0);
 });
 
@@ -520,7 +520,7 @@ test('party mechanic and mahjong run hint stay hidden until phase two, then rese
   assert.equal(trainer.mechanicRevealed.value, false, 'the queue phase must not reveal stack or spread');
   assert.deepEqual(trainer.mahjongCues.value, [], 'the queue phase must not reveal mahjong dots');
 
-  trainer.selectCell(autoQueue(FIXED_QUESTION).MT);
+  trainer.selectCell(autoQueue(FIXED_QUESTION).T);
   scheduler.advanceTo(5_000);
   assert.equal(trainer.mechanicRevealed.value, true);
   assert.equal(trainer.mahjongCues.value.length, 4);
@@ -543,7 +543,7 @@ test('waterfall mechanic shows the whole party going to region one', () => {
   trainer.start();
 
   assert.equal(trainer.mahjongRunHint.value, null);
-  trainer.selectCell(autoQueue(STACK_QUESTION).MT);
+  trainer.selectCell(autoQueue(STACK_QUESTION).T);
   scheduler.advanceTo(5_000);
 
   assert.deepEqual(trainer.mahjongRunHint.value, {
@@ -554,7 +554,7 @@ test('waterfall mechanic shows the whole party going to region one', () => {
 test('spread route labels follow which role group has bubbles', () => {
   const { trainer, scheduler } = createTrainer(DD_BUBBLE_QUESTION);
   trainer.start();
-  trainer.selectCell(autoQueue(DD_BUBBLE_QUESTION).MT);
+  trainer.selectCell(autoQueue(DD_BUBBLE_QUESTION).T);
   scheduler.advanceTo(5_000);
 
   assert.deepEqual(trainer.mahjongRunHint.value, {
@@ -594,7 +594,7 @@ test('timeout, retry, and new question leave no stale timer callbacks', () => {
 
 test('an incorrect submitted position opens YOU DIED and stops the timer', () => {
   const { trainer, scheduler } = createTrainer();
-  const correct = autoQueue(FIXED_QUESTION).MT;
+  const correct = autoQueue(FIXED_QUESTION).T;
   trainer.start();
   trainer.selectCell((correct + 1) % 16);
   trainer.confirm();
@@ -602,7 +602,7 @@ test('an incorrect submitted position opens YOU DIED and stops the timer', () =>
   assert.equal(trainer.death.value.open, true);
   assert.equal(
     trainer.death.value.reason,
-    '你的排隊位置不符：MT 應站第 2 直行、第 2 橫列。'
+    '你的排隊位置不符：T 應站第 2 直行、第 2 橫列。'
   );
   assert.equal(trainer.lockPosition.value, true);
   assert.equal(scheduler.tasks.size, 0);
@@ -610,7 +610,7 @@ test('an incorrect submitted position opens YOU DIED and stops the timer', () =>
 
 test('non-timed mode supports queue and pre-position practice without a deadline', () => {
   const { trainer, scheduler } = createTrainer();
-  const solution = solveParty(FIXED_QUESTION, 'MT');
+  const solution = solveParty(FIXED_QUESTION, 'T');
   assert.ok(solution);
 
   trainer.setTimed(false);
@@ -621,7 +621,7 @@ test('non-timed mode supports queue and pre-position practice without a deadline
   assert.equal(trainer.phase.value, 0);
   assert.equal(scheduler.tasks.size, 0);
 
-  trainer.selectCell(autoQueue(FIXED_QUESTION).MT);
+  trainer.selectCell(autoQueue(FIXED_QUESTION).T);
   trainer.confirm();
   assert.equal(trainer.phase.value, 0);
   trainer.nextStep();
@@ -630,7 +630,7 @@ test('non-timed mode supports queue and pre-position practice without a deadline
     routes: [{ group: '坦補', region: 1 }, { group: 'DD', region: 2 }]
   });
 
-  trainer.selectCell(solution.pre.MT);
+  trainer.selectCell(solution.pre.T);
   trainer.confirm();
   assert.equal(trainer.phase.value, 2);
   assert.equal(trainer.death.value.open, false);

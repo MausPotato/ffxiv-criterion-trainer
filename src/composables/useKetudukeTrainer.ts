@@ -176,7 +176,7 @@ export function useKetudukeTrainer(options: KetudukeTrainerOptions = {}) {
     if (question.value.party === '分攤') {
       return { routes: [{ group: '全體', region: 1 }] };
     }
-    const tankHealerBubble = question.value.buffs.MT === 'bubble'
+    const tankHealerBubble = question.value.buffs.T === 'bubble'
       && question.value.buffs.H === 'bubble';
     return tankHealerBubble
       ? { routes: [{ group: '坦補', region: 1 }, { group: 'DD', region: 2 }] }

@@ -17,6 +17,7 @@ defineProps<{
   roleLocked: boolean;
   mechanicRevealed: boolean;
   mahjongRunHint: MahjongRunHint | null;
+  showArenaMarkers: boolean;
 }>();
 
 defineEmits<{
@@ -25,6 +26,7 @@ defineEmits<{
   toggleHint: [];
   'update:timed': [value: boolean];
   'update:showWind': [value: boolean];
+  'update:showArenaMarkers': [value: boolean];
 }>();
 </script>
 
@@ -55,6 +57,17 @@ defineEmits<{
         <span>
           <strong>吹風位移動畫</strong>
           <small>每輪移動 1 秒＋停留 0.5 秒</small>
+        </span>
+      </label>
+      <label class="switch-row">
+        <input
+          type="checkbox"
+          :checked="showArenaMarkers"
+          @change="$emit('update:showArenaMarkers', ($event.target as HTMLInputElement).checked)"
+        >
+        <span>
+          <strong>場地標記</strong>
+          <small>顯示 A～D、1～4</small>
         </span>
       </label>
     </div>

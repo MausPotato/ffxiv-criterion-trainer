@@ -72,7 +72,7 @@ function questionFor(entry) {
   return {
     center: { r, c, o },
     crystals: crystals(entry.initial),
-    buffs: { MT: 'bubble', H: 'bubble', D1: 'bind', D2: 'bind' },
+    buffs: { T: 'bubble', H: 'bubble', D1: 'bind', D2: 'bind' },
     party: '分散',
     rotation: entry.rotation
   };

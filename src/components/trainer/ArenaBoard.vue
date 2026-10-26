@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { toCellIndex, toCoordinate, type CellIndex } from '../../domain/grid.ts';
-import { formatGridCoordinate } from '../../domain/grid-coordinate-format.ts';
 import { ROLES, type PartialRoleMap, type Role } from '../../domain/roles.ts';
 import type { Crystal, KetudukeQuestion, TrainerPhase, WindStep } from '../../mechanics/ketuduke/types.ts';
 import type { QuadrantWindEffect } from '../../presentation/ketuduke/wind-effects.ts';
@@ -12,6 +11,7 @@ import {
 } from '../../presentation/ketuduke/wind-effects.ts';
 import CrystalMarker from './CrystalMarker.vue';
 import RoleMarker from './RoleMarker.vue';
+import ArenaFloor from './ArenaFloor.vue';
 
 const props = defineProps<{
   question: KetudukeQuestion;
@@ -36,13 +36,6 @@ const emit = defineEmits<{
   selectCell: [cell: CellIndex];
 }>();
 
-const cells = computed(() => Array.from({ length: 16 }, (_, index) => {
-  const r = Math.floor(index / 4);
-  const c = index % 4;
-  const roles = ROLES.filter(role => props.positions?.[role] === index);
-  return { index, r, c, roles, coordinateLabel: formatGridCoordinate({ r, c }) };
-}));
-
 const roleActors = computed(() => ROLES.flatMap(role => {
   const position = props.positions?.[role];
   if (position === undefined) return [];
@@ -60,32 +53,26 @@ function actorStyle(position: CellIndex, offset = 0): Record<string, string> {
   };
 }
 
-function selectCell(cell: CellIndex): void {
-  if (!props.interactive) return;
-  emit('selectCell', cell);
+function cellClass(cell: { index: CellIndex }): Record<string, boolean> {
+  const selected = ROLES.some(role => props.positions?.[role] === cell.index);
+  return {
+    'queue-line': props.phase === 0 && props.queueCells.includes(cell.index),
+    selected,
+    safe: props.review && props.safeCells.includes(cell.index),
+    hazard: props.review && props.hazardCells.includes(cell.index)
+  };
 }
 
 </script>
 
 <template>
   <div class="arena-wrap">
-    <div class="board" :class="{ inactive: !ready }">
-      <button
-        v-for="cell in cells"
-        :key="cell.index"
-        class="arena-tile"
-        :class="{
-          'queue-line': phase === 0 && queueCells.includes(cell.index),
-          selected: cell.roles.length > 0,
-          safe: review && safeCells.includes(cell.index),
-          hazard: review && hazardCells.includes(cell.index)
-        }"
-        type="button"
-        :aria-label="cell.coordinateLabel"
-        :disabled="!interactive"
-        @click="selectCell(cell.index)"
-      ></button>
-
+    <ArenaFloor
+      :inactive="!ready"
+      :interactive="interactive"
+      :cell-class="cellClass"
+      @select-cell="emit('selectCell', $event)"
+    >
       <div v-if="mahjongCues.length" class="board-wind-cue-layer" aria-hidden="true" inert>
         <span
           v-for="cue in mahjongCues"
@@ -159,7 +146,7 @@ function selectCell(cell: CellIndex): void {
       <div v-if="windStep" class="wind-direction" aria-live="polite">
         {{ windStep === 1 ? '① 橫向吹風：泡泡移動' : '② 縱向吹風：泡泡移動' }}
       </div>
-    </div>
+    </ArenaFloor>
 
     <div v-if="!ready" class="board-start">
       <div class="start-glyph" aria-hidden="true">◆</div>

@@ -68,7 +68,7 @@ function cachedLegalInitialCrystalLayouts(center: CenterCrystal): Crystal[][] {
       const question = {
         center,
         crystals,
-        buffs: { MT: 'bubble', H: 'bubble', D1: 'bind', D2: 'bind' },
+        buffs: { T: 'bubble', H: 'bubble', D1: 'bind', D2: 'bind' },
         party: '分散',
         rotation
       } satisfies KetudukeQuestion;
@@ -126,7 +126,7 @@ export function generateQuestion(random: RandomSource = Math.random): KetudukeQu
 
   const bubbleTH = randomInteger(2, random) === 0;
   const buffs: RoleMap<Buff> = {
-    MT: bubbleTH ? 'bubble' : 'bind',
+    T: bubbleTH ? 'bubble' : 'bind',
     H: bubbleTH ? 'bubble' : 'bind',
     D1: bubbleTH ? 'bind' : 'bubble',
     D2: bubbleTH ? 'bind' : 'bubble'

@@ -38,7 +38,7 @@ export function solveParty(
       if (!ROLES.every(role => safe.has(ends[role]))) return;
       if (question.party === '分散') {
         if (new Set(Object.values(ends)).size !== 4) return;
-      } else if (ends.MT !== ends.D1 || ends.H !== ends.D2 || ends.MT === ends.H) {
+      } else if (ends.T !== ends.D1 || ends.H !== ends.D2 || ends.T === ends.H) {
         return;
       }
       solution = { pre: { ...pre }, final: ends };
@@ -111,10 +111,10 @@ export function groupCheck(
       ? { ok: true, detail: '四人分別站在不同格' }
       : { ok: false, detail: '分散有角色重疊' };
   }
-  const exact = positions.MT === positions.D1
+  const exact = positions.T === positions.D1
     && positions.H === positions.D2
-    && positions.MT !== positions.H;
+    && positions.T !== positions.H;
   return exact
-    ? { ok: true, detail: 'MT＋D1、H＋D2，各組兩人同格' }
-    : { ok: false, detail: '分攤應為 MT＋D1、H＋D2 各兩人同格，隊友配置不正確' };
+    ? { ok: true, detail: 'T＋D1、H＋D2，各組兩人同格' }
+    : { ok: false, detail: '分攤應為 T＋D1、H＋D2 各兩人同格，隊友配置不正確' };
 }

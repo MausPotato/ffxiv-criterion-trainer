@@ -5,9 +5,11 @@ import DeathDialog from '../components/trainer/DeathDialog.vue';
 import TrainerControls from '../components/trainer/TrainerControls.vue';
 import TrainerHud from '../components/trainer/TrainerHud.vue';
 import TrainerSettlement from '../components/trainer/TrainerSettlement.vue';
+import { useArenaMarkers } from '../composables/useArenaMarkers.ts';
 import { useKetudukeTrainer } from '../composables/useKetudukeTrainer.ts';
 
 const trainer = useKetudukeTrainer();
+const arenaMarkers = useArenaMarkers();
 </script>
 
 <template>
@@ -20,6 +22,11 @@ const trainer = useKetudukeTrainer();
       </div>
       <span class="version-chip">VUE PREVIEW · PHASE 4A</span>
     </div>
+
+    <nav class="mechanic-nav" aria-label="凱圖嘟凱機制切換">
+      <RouterLink class="active" to="/aloalo-island/ketuduke">第一機制：排隊法</RouterLink>
+      <RouterLink to="/aloalo-island/ketuduke/blowing-bubbles">第二機制：吹氣泡預覽 →</RouterLink>
+    </nav>
 
     <div class="trainer-layout">
       <section class="arena-panel panel" aria-label="凱圖嘟凱四乘四練習場地">
@@ -54,11 +61,13 @@ const trainer = useKetudukeTrainer();
           :role-locked="trainer.lockPosition.value"
           :mechanic-revealed="trainer.mechanicRevealed.value"
           :mahjong-run-hint="trainer.mahjongRunHint.value"
+          :show-arena-markers="arenaMarkers.showArenaMarkers.value"
           @select-role="trainer.selectRole"
           @new-question="trainer.newQuestion"
           @toggle-hint="trainer.toggleHint"
           @update:timed="trainer.setTimed"
           @update:show-wind="trainer.setShowWind"
+          @update:show-arena-markers="arenaMarkers.setShowArenaMarkers"
         />
 
         <TrainerHud

@@ -25,7 +25,7 @@ export function autoQueue(question: KetudukeQuestion): RoleMap<CellIndex> {
   const cells = queueLine(question);
   const output = {} as RoleMap<CellIndex>;
   const teams: Array<[number, Role[]]> = [
-    [0, ['MT', 'D2']],
+    [0, ['T', 'D2']],
     [1, ['H', 'D1']]
   ];
 

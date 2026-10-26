@@ -33,6 +33,30 @@ function plain(value) {
     : JSON.parse(JSON.stringify(value));
 }
 
+function legacyRole(role) {
+  return role === 'T' ? 'MT' : role;
+}
+
+function fromLegacy(value) {
+  if (Array.isArray(value)) return value.map(fromLegacy);
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, entry]) => [key === 'MT' ? 'T' : key, fromLegacy(entry)])
+    );
+  }
+  return typeof value === 'string' ? value.replace(/\bMT\b/g, 'T') : value;
+}
+
+function toLegacy(value) {
+  if (Array.isArray(value)) return value.map(toLegacy);
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, entry]) => [key === 'T' ? 'MT' : key, toLegacy(entry)])
+    );
+  }
+  return value;
+}
+
 function generatedPair(values) {
   const harness = createLegacyHarness({ randomValues: values });
   const legacy = plain(harness.api.make());
@@ -46,7 +70,7 @@ test('question generation preserves V4.5 scenario metadata while filtering cryst
       const { legacy, extracted } = generatedPair(values);
       assert.deepEqual(extracted.center, legacy.center);
       assert.equal(extracted.rotation, legacy.rotation);
-      assert.deepEqual(extracted.buffs, legacy.buffs);
+      assert.deepEqual(extracted.buffs, fromLegacy(legacy.buffs));
       assert.equal(extracted.party, legacy.party);
       assert.deepEqual(
         extracted.crystals.map(({ o, q }) => ({ o, q })),
@@ -61,7 +85,7 @@ test('queue, mahjong regions, and pre-position candidates match V4.5', async t =
     await t.test(`question ${index + 1}`, () => {
       const { harness, legacy, extracted } = generatedPair(values);
       harness.api.setGame(legacy);
-      assert.deepEqual(autoQueue(extracted), plain(harness.api.autoQueue()));
+      assert.deepEqual(autoQueue(extracted), fromLegacy(plain(harness.api.autoQueue())));
 
       for (let r = 0; r < 4; r++) {
         for (let c = 0; c < 4; c++) {
@@ -69,12 +93,15 @@ test('queue, mahjong regions, and pre-position candidates match V4.5', async t =
         }
       }
       for (const role of ROLES) {
-        assert.equal(wantedMahjongRegion(extracted, role), harness.api.wanted(role));
-        assert.deepEqual(candidatePrePositions(extracted, role), plain(harness.api.candidatePre(role)));
+        assert.equal(wantedMahjongRegion(extracted, role), harness.api.wanted(legacyRole(role)));
+        assert.deepEqual(
+          candidatePrePositions(extracted, role),
+          plain(harness.api.candidatePre(legacyRole(role)))
+        );
 
         for (const selected of [undefined, 0, autoQueue(extracted)[role]]) {
-          harness.api.setFocus(role);
-          harness.api.setQueue(selected === undefined ? {} : { [role]: selected });
+          harness.api.setFocus(legacyRole(role));
+          harness.api.setQueue(selected === undefined ? {} : { [legacyRole(role)]: selected });
           assert.equal(
             queueError(extracted, role, selected) === null,
             harness.api.queueError() === null,
@@ -104,24 +131,27 @@ test('full-party solver matches V4.5 for every focus role', async t => {
     harness.api.setGame(legacy);
     for (const role of ROLES) {
       await t.test(`question ${questionIndex + 1}, focus ${role}`, () => {
-        harness.api.setFocus(role);
-        const legacySolution = plain(harness.api.solveParty());
+        harness.api.setFocus(legacyRole(role));
+        const legacySolution = fromLegacy(plain(harness.api.solveParty()));
         const extractedSolution = solveParty(extracted, role);
         assert.deepEqual(extractedSolution, legacySolution);
         if (legacySolution) {
           const playerSpot = legacySolution.pre[role];
           harness.api.setQueue(plain(harness.api.autoQueue()));
-          harness.api.setPre({ [role]: playerSpot });
+          harness.api.setPre({ [legacyRole(role)]: playerSpot });
           assert.deepEqual(
             prePositionError(extracted, role, playerSpot),
-            plain(harness.api.preError())
+            fromLegacy(plain(harness.api.preError()))
           );
           assert.deepEqual(
             solveParty(extracted, role, playerSpot),
-            plain(harness.api.solveParty(playerSpot))
+            fromLegacy(plain(harness.api.solveParty(playerSpot)))
           );
-          harness.api.setPlayerFinal(legacySolution.final);
-          assert.deepEqual(groupCheck(extracted, extractedSolution.final), plain(harness.api.groupCheck()));
+          harness.api.setPlayerFinal(toLegacy(legacySolution.final));
+          assert.deepEqual(
+            groupCheck(extracted, extractedSolution.final),
+            fromLegacy(plain(harness.api.groupCheck()))
+          );
         }
       });
     }

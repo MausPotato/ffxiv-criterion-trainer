@@ -24,7 +24,7 @@ function assertValidLayout(center, crystals) {
   const question = {
     center,
     crystals,
-    buffs: { MT: 'bubble', H: 'bubble', D1: 'bind', D2: 'bind' },
+    buffs: { T: 'bubble', H: 'bubble', D1: 'bind', D2: 'bind' },
     party: '分散',
     rotation
   };
