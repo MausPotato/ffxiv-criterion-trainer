@@ -18,6 +18,7 @@ import { useLalaRuArenaInteraction } from '../../composables/useLalaRuArenaInter
 import RotationCueIcon from './RotationCueIcon.vue';
 import MechanicIcon from '../trainer/MechanicIcon.vue';
 import TrainerCameraControls from '../trainer/TrainerCameraControls.vue';
+import TrainerStartOverlay from '../trainer/TrainerStartOverlay.vue';
 import PlayerFacingIndicator from './PlayerFacingIndicator.vue';
 
 const props = defineProps<{
@@ -170,11 +171,11 @@ function actorStyle(point: ArenaPoint, diameter: number): Record<string, string>
         />
       </div>
 
-      <div v-if="phase === 'idle'" class="lalaru-start-overlay">
-        <span class="start-rune" aria-hidden="true">✦</span>
-        <button class="primary-button start-button" type="button" @click="emit('start')">開始練習</button>
-        <small>左鍵拖曳角色；右鍵拖曳旋轉視角</small>
-      </div>
+      <TrainerStartOverlay
+        v-if="phase === 'idle'"
+        description="左鍵拖曳角色；右鍵拖曳旋轉視角"
+        @start="emit('start')"
+      />
 
       <div v-if="phase === 'resolved'" class="arena-result" :class="succeeded ? 'success' : 'failure'">
         {{ succeeded ? 'SAFE' : 'HIT' }}
@@ -244,9 +245,6 @@ function actorStyle(point: ArenaPoint, diameter: number): Record<string, string>
 .cardinal { position: absolute; z-index: 3; color: rgba(190, 230, 240, .7); font: 800 12px ui-monospace, monospace; pointer-events: none; }
 .cardinal-north { top: 8px; left: 50%; transform: translateX(-50%); }
 .cardinal-east { top: 50%; right: 9px; transform: translateY(-50%); }
-.lalaru-start-overlay { position: absolute; inset: 0; z-index: 12; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; background: rgba(5, 14, 22, .72); backdrop-filter: blur(3px); }
-.lalaru-start-overlay small { color: #b5c9d3; }
-.start-rune { color: #65d7ed; font-size: 30px; text-shadow: 0 0 22px #52d1ec; }
 .arena-result { position: absolute; top: 6%; left: 50%; z-index: 10; padding: 7px 18px; border: 1px solid currentColor; border-radius: 999px; background: rgba(6, 18, 25, .88); font: 900 14px ui-monospace, monospace; letter-spacing: .15em; transform: translateX(-50%); }
 .arena-result.success { color: #7cebb4; }
 .arena-result.failure { color: #ff7b88; }

@@ -36,6 +36,7 @@ import MechanicIcon from '../trainer/MechanicIcon.vue';
 import TrainerCameraControls from '../trainer/TrainerCameraControls.vue';
 import PlayerFacingIndicator from './PlayerFacingIndicator.vue';
 import RotationCueIcon from './RotationCueIcon.vue';
+import TrainerStartOverlay from '../trainer/TrainerStartOverlay.vue';
 
 const props = defineProps<{
   phase: CompositePhase;
@@ -333,11 +334,11 @@ function orbStyle(orb: CompositeOrb): Record<string, string> {
         光球 {{ orbAnalysisResults.length }}：{{ latestAnalysisResult.succeeded ? '缺口正確' : '方向錯誤' }}
       </div>
 
-      <div v-if="phase === 'idle'" class="composite-start-overlay">
-        <span class="start-rune" aria-hidden="true">◇</span>
-        <button class="primary-button start-button" type="button" @click="emit('start')">開始練習</button>
-        <small>3 秒預覽後，兩側 AoE 每秒同步前進一格</small>
-      </div>
+      <TrainerStartOverlay
+        v-if="phase === 'idle'"
+        description="3 秒預覽後，兩側 AoE 每秒同步前進一格"
+        @start="emit('start')"
+      />
 
       <div v-if="paused" class="pause-badge">PAUSED</div>
       <div v-if="phase === 'resolved'" class="arena-result" :class="succeeded ? 'success' : 'failure'">
@@ -397,9 +398,6 @@ function orbStyle(orb: CompositeOrb): Record<string, string> {
 .analysis-impact-result { position: absolute; top: 5%; right: 4%; z-index: 16; padding: 7px 11px; border: 1px solid currentColor; border-radius: 999px; background: rgba(6, 18, 25, .9); font-size: 12px; font-weight: 800; pointer-events: none; }
 .analysis-impact-result.success { color: #7cebb4; }
 .analysis-impact-result.failure { color: #ff7b88; }
-.composite-start-overlay { position: absolute; inset: 0; z-index: 20; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; background: rgba(5, 14, 22, .68); backdrop-filter: blur(2px); }
-.composite-start-overlay small { color: #b5c9d3; }
-.start-rune { color: #65d7ed; font-size: 30px; text-shadow: 0 0 22px #52d1ec; }
 .pause-badge, .arena-result { position: absolute; top: 6%; left: 50%; z-index: 21; padding: 7px 18px; border: 1px solid currentColor; border-radius: 999px; background: rgba(6, 18, 25, .88); font: 900 14px ui-monospace, monospace; letter-spacing: .15em; transform: translateX(-50%); }
 .pause-badge { color: #ffd76c; }
 .arena-result.success { color: #7cebb4; }

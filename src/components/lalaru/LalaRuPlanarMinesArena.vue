@@ -14,6 +14,7 @@ import {
   type PlanarPhase
 } from '../../mechanics/lalaru/index.ts';
 import TrainerCameraControls from '../trainer/TrainerCameraControls.vue';
+import TrainerStartOverlay from '../trainer/TrainerStartOverlay.vue';
 
 const props = defineProps<{
   mineCells: readonly PlanarMineCell[];
@@ -197,11 +198,11 @@ function mineKey(cell: PlanarMineCell): string {
         <span class="cardinal cardinal-east">E</span>
       </div>
 
-      <div v-if="phase === 'idle'" class="planar-start-overlay">
-        <span class="start-rune" aria-hidden="true">◆</span>
-        <button class="primary-button start-button" type="button" @click="emit('start')">開始練習</button>
-        <small>開始後取得 Debuff，並在倒數內完成視角、站位與面向調整</small>
-      </div>
+      <TrainerStartOverlay
+        v-if="phase === 'idle'"
+        description="開始後取得 Debuff，並在倒數內完成視角、站位與面向調整"
+        @start="emit('start')"
+      />
       <div v-else-if="phase === 'resolved'" class="planar-result success">成功</div>
       <div v-else-if="phase === 'dead'" class="planar-result failure">失敗</div>
     </div>
@@ -242,8 +243,6 @@ function mineKey(cell: PlanarMineCell): string {
 .actor-rotation-cue { position: absolute; top: -105px; left: 50%; z-index: 12; transform: translateX(-50%) rotate(var(--counter-rotation)) scale(.72); transform-origin: center bottom; pointer-events: none; }
 .cardinal { position: absolute; z-index: 6; color: rgba(218, 244, 248, .75); font: 800 12px ui-monospace, monospace; pointer-events: none; }
 .cardinal-north { top: 8px; left: 50%; transform: translateX(-50%); } .cardinal-east { top: 50%; right: 9px; transform: translateY(-50%); }
-.planar-start-overlay { position: absolute; inset: 0; z-index: 30; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; background: rgba(5, 14, 22, .72); backdrop-filter: blur(3px); }
-.planar-start-overlay small { max-width: 80%; color: #b5c9d3; text-align: center; }.start-rune { color: #65d7ed; font-size: 30px; text-shadow: 0 0 22px #52d1ec; }.start-button { padding: 13px 22px; font-size: 17px; }
 .planar-result { position: absolute; top: 14px; left: 50%; z-index: 28; padding: 8px 20px; border: 1px solid currentColor; border-radius: 999px; transform: translateX(-50%); font-weight: 900; letter-spacing: .12em; background: rgba(5, 15, 22, .9); }
 .planar-result.success { color: #72f0ad; }.planar-result.failure { color: #ff647c; }
 @keyframes mine-telegraph { from { filter: brightness(.65); } to { filter: brightness(1.25); } }

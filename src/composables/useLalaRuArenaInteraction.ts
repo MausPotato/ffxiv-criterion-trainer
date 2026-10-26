@@ -119,8 +119,8 @@ export function useLalaRuArenaInteraction(options: LalaRuArenaInteractionOptions
     event.preventDefault();
   }
 
-  function resetCamera(): void {
-    cameraRotation.value = 0;
+  function resetCamera(rotation = 0): void {
+    cameraRotation.value = normalizeCameraRotation(rotation);
   }
 
   function runControlFrame(timestamp: number): void {

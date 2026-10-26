@@ -7,6 +7,10 @@ import analysisRight from './lalaru-analysis-right.png';
 import subtractionOne from './lalaru-subtraction-1.png';
 import subtractionTwo from './lalaru-subtraction-2.png';
 import subtractionThree from './lalaru-subtraction-3.png';
+import spatialSubtractionOne from './lalaru-spatial-subtraction-1.png';
+import spatialSubtractionTwo from './lalaru-spatial-subtraction-2.png';
+import spatialSubtractionThree from './lalaru-spatial-subtraction-3.png';
+import spatialSubtractionFour from './lalaru-spatial-subtraction-4.png';
 import lalaruStack from './lalaru-stack.png';
 import lalaruForward from './lalaru-forward.png';
 
@@ -32,6 +36,10 @@ export const MECHANIC_ICONS = {
   subtractionOne,
   subtractionTwo,
   subtractionThree,
+  spatialSubtractionOne,
+  spatialSubtractionTwo,
+  spatialSubtractionThree,
+  spatialSubtractionFour,
   lalaruStack,
   lalaruForward
 } as const;

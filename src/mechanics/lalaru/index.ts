@@ -9,3 +9,5 @@ export * from './analysis.ts';
 export * from './analysis-timing.ts';
 export * from './planar-mines.ts';
 export * from './planar-mines-resolution.ts';
+export * from './spatial-bombs.ts';
+export * from './spatial-bombs-timing.ts';
