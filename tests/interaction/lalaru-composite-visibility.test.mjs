@@ -133,8 +133,12 @@ test('LalaRu local navigation contains only LalaRu mechanics', async () => {
   assert.doesNotMatch(analysisView, /<RouterLink[^>]+to="\/aloalo-island\/lalaru\/analysis"/);
 });
 
-test('Ketuduke and both LalaRu pages share the same desktop page width and column ratio', async () => {
+test('composite joins the migrated shell pages at the same desktop width and column ratio', async () => {
   const base = await readFile(new URL('../../src/styles/base.css', import.meta.url), 'utf8');
+  const shell = await readFile(
+    new URL('../../src/components/trainer/TrainerPageShell.vue', import.meta.url),
+    'utf8'
+  );
   const firstView = await readFile(
     new URL('../../src/views/LalaRuTrainerView.vue', import.meta.url),
     'utf8'
@@ -149,9 +153,12 @@ test('Ketuduke and both LalaRu pages share the same desktop page width and colum
   );
   assert.match(base, /\.trainer-page \{[\s\S]*?width: min\(1440px, calc\(100% - 40px\)\)/);
   assert.match(base, /\.trainer-layout \{[\s\S]*?grid-template-columns: minmax\(0, 1\.08fr\) minmax\(420px, \.92fr\)/);
-  for (const source of [firstView, compositeView, analysisView]) {
-    assert.match(source, /<main class="trainer-page /);
-    assert.match(source, /<div class="trainer-layout /);
+  assert.match(shell, /<main class="trainer-page trainer-page-shell">/);
+  assert.match(shell, /<div class="trainer-layout">/);
+  for (const source of [firstView, analysisView, compositeView]) {
+    assert.match(source, /<TrainerPageShell/);
+    assert.doesNotMatch(source, /class="[^"]*\btrainer-layout\b/);
+    assert.doesNotMatch(source, /class="[^"]*\bcontrol-panel\b/);
   }
 });
 

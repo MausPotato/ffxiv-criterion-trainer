@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
-import { RouterLink } from 'vue-router';
 import LalaRuCompositeArena from '../components/lalaru/LalaRuCompositeArena.vue';
 import DeathDialog from '../components/trainer/DeathDialog.vue';
 import TrainerActionRow from '../components/trainer/TrainerActionRow.vue';
+import TrainerPageShell from '../components/trainer/TrainerPageShell.vue';
 import TrainerPracticeSettings from '../components/trainer/TrainerPracticeSettings.vue';
 import TrainerSegmentedControl from '../components/trainer/TrainerSegmentedControl.vue';
 import TrainerStageCard from '../components/trainer/TrainerStageCard.vue';
@@ -15,8 +15,10 @@ import {
   type AnalysisDebuff
 } from '../mechanics/lalaru/index.ts';
 import { MECHANIC_ICONS, type MechanicIconName } from '../assets/mechanic-icons.ts';
+import { trainerNavigationFor } from '../navigation/trainer-navigation.ts';
 
 const trainer = useLalaRuCompositeTrainer();
+const lalaruNavigation = trainerNavigationFor('lalaru');
 const deathDialogOpen = ref(false);
 const modeOptions = [
   { value: 'tutorial', label: '教學模式' },
@@ -80,25 +82,16 @@ onBeforeUnmount(() => document.removeEventListener('contextmenu', preventContext
 </script>
 
 <template>
-  <main class="trainer-page composite-page">
-    <div class="trainer-heading composite-heading">
-      <div>
-        <RouterLink class="back-link" to="/">← 回到迷宮一覽</RouterLink>
-        <h1>拉拉魯｜複合魔紋</h1>
-        <p>避開步進地板，並調整面向讓兩次光球攻擊進入 C 字缺口。</p>
-      </div>
-      <span class="version-chip">SECOND MECHANIC · PHASE 1</span>
-    </div>
-
-    <nav class="mechanic-nav" aria-label="拉拉魯機制選擇">
-      <RouterLink to="/aloalo-island/lalaru/rotation">旋轉角乘算</RouterLink>
-      <RouterLink class="active" to="/aloalo-island/lalaru/composite-pattern">複合魔紋</RouterLink>
-      <RouterLink to="/aloalo-island/lalaru/planar-mines">平面爆雷</RouterLink>
-    </nav>
-
-    <div class="trainer-layout composite-layout">
-      <section class="arena-panel panel composite-arena-panel">
-        <LalaRuCompositeArena
+  <TrainerPageShell
+    title="拉拉魯｜複合魔紋"
+    description="避開步進地板，並調整面向讓兩次光球攻擊進入 C 字缺口。"
+    version="SECOND MECHANIC · PHASE 1"
+    :navigation="lalaruNavigation"
+    navigation-label="拉拉魯機制選擇"
+    arena-label="拉拉魯複合魔紋練習場地"
+  >
+    <template #arena>
+      <LalaRuCompositeArena
           :phase="trainer.phase.value"
           :mode="trainer.mode.value"
           :paused="trainer.paused.value"
@@ -131,21 +124,23 @@ onBeforeUnmount(() => document.removeEventListener('contextmenu', preventContext
           @start="trainer.start"
           @update-player-position="trainer.setPlayerPosition"
           @update-player-facing-angle="trainer.setPlayerFacingAngle"
+      />
+    </template>
+
+    <template #settings>
+      <TrainerPracticeSettings title-id="composite-settings-title" kicker="TRAINING MODE">
+        <TrainerSegmentedControl
+          :model-value="trainer.mode.value"
+          :options="modeOptions"
+          label="練習模式"
+          @change="value => trainer.setMode(value as 'tutorial' | 'battle')"
         />
-      </section>
+        <p class="mode-description">{{ trainer.mode.value === 'tutorial' ? '顯示完整路線、危險地板及光球分析角度。' : '只顯示實際箭頭、光球、C 字環與 AoE 演出。' }}</p>
+      </TrainerPracticeSettings>
+    </template>
 
-      <aside class="control-panel panel trainer-control-stack composite-control-panel">
-        <TrainerPracticeSettings title-id="composite-settings-title" kicker="TRAINING MODE">
-          <TrainerSegmentedControl
-            :model-value="trainer.mode.value"
-            :options="modeOptions"
-            label="練習模式"
-            @change="value => trainer.setMode(value as 'tutorial' | 'battle')"
-          />
-          <p class="mode-description">{{ trainer.mode.value === 'tutorial' ? '顯示完整路線、危險地板及光球分析角度。' : '只顯示實際箭頭、光球、C 字環與 AoE 演出。' }}</p>
-        </TrainerPracticeSettings>
-
-        <section class="composite-analysis-panel">
+    <template #context>
+      <section class="composite-analysis-panel">
           <div class="analysis-heading-row">
             <img v-if="trainer.phase.value !== 'idle'" :src="MECHANIC_ICONS[analysisIconNames[trainer.analysisDebuff.value]]" alt="" />
             <span v-else class="analysis-icon-placeholder" aria-hidden="true"></span>
@@ -161,65 +156,64 @@ onBeforeUnmount(() => document.removeEventListener('contextmenu', preventContext
           </div>
           <p v-else-if="trainer.mode.value === 'tutorial'" class="analysis-waiting">等待光球被步進 AoE 觸發。</p>
           <p v-else-if="latestAnalysisResult" class="analysis-battle-count">已完成 {{ trainer.analysisResults.value.length }} / 3 次分析判定</p>
-        </section>
+      </section>
+    </template>
 
-        <section class="hud-section composite-hud" aria-live="polite">
-          <TrainerStats
+    <template #status>
+      <TrainerStats
             :round="trainer.attempts.value"
             :wins="trainer.successes.value"
             round-label="完成"
             wins-label="成功"
             :show-streak="false"
-          />
-          <TrainerStageCard :badge="stageBadge" :clock="stageClock" :title="stageTitle" :status="stageDescription">
+      />
+      <TrainerStageCard :badge="stageBadge" :clock="stageClock" :title="stageTitle" :status="stageDescription">
             <div
               v-if="trainer.phase.value === 'preview' && !trainer.paused.value"
               class="stage-progress is-timed"
               :style="{ '--stage-duration': `${COMPOSITE_TIMING.previewDurationMs}ms` }"
             ><span></span></div>
-          <dl class="trainer-info-grid status-grid">
+          <dl class="trainer-info-grid">
             <div><dt>危險格</dt><dd>{{ trainer.dangerousCells.value.length }} / 20</dd></div>
             <div><dt>光球爆炸</dt><dd>{{ trainer.explosionCount.value }} / 2</dd></div>
             <div><dt>魔紋砲</dt><dd>{{ trainer.bossCannonState.value === 'hidden' ? '—' : trainer.bossCannonState.value === 'waiting' ? '光球爆炸中' : trainer.bossCannonState.value === 'resolved' ? (trainer.bossCannonSucceeded.value ? '通過' : '命中') : trainer.bossCannonState.value === 'resolving' ? '結算' : '預兆' }}</dd></div>
             <div><dt>缺口偏移</dt><dd>{{ trainer.playerRotationState.value === 'applied' ? `${trainer.playerGapRotationDegrees.value > 0 ? '+' : ''}${trainer.playerGapRotationDegrees.value}°` : '尚未乘算' }}</dd></div>
             <div><dt>下次步進</dt><dd>{{ trainer.paused.value || !trainer.nextStepInMs.value ? '—' : `${trainer.nextStepInMs.value / 1000}s` }}</dd></div>
           </dl>
-          </TrainerStageCard>
-        </section>
+      </TrainerStageCard>
+    </template>
 
-        <section v-if="trainer.mode.value === 'tutorial'">
-          <p class="section-kicker">TIMELINE CONTROL</p>
-          <h2>動畫檢查</h2>
-          <TrainerActionRow class="two-column animation-controls">
-            <button class="secondary-button" type="button" :disabled="trainer.phase.value === 'idle' || trainer.phase.value === 'dead' || trainer.phase.value === 'resolved'" @click="trainer.togglePause">{{ trainer.paused.value ? '繼續' : '暫停' }}</button>
-            <button class="secondary-button" type="button" :disabled="trainer.phase.value === 'dead' || trainer.phase.value === 'resolved'" @click="trainer.stepForward">逐步播放</button>
-            <button class="secondary-button wide" type="button" @click="trainer.replay">從頭重播</button>
-          </TrainerActionRow>
-        </section>
+    <template v-if="trainer.mode.value === 'tutorial'" #timeline>
+      <p class="section-kicker">TIMELINE CONTROL</p>
+      <h2>動畫檢查</h2>
+      <TrainerActionRow class="two-column">
+        <button class="secondary-button" type="button" :disabled="trainer.phase.value === 'idle' || trainer.phase.value === 'dead' || trainer.phase.value === 'resolved'" @click="trainer.togglePause">{{ trainer.paused.value ? '繼續' : '暫停' }}</button>
+        <button class="secondary-button" type="button" :disabled="trainer.phase.value === 'dead' || trainer.phase.value === 'resolved'" @click="trainer.stepForward">逐步播放</button>
+        <button class="secondary-button wide" type="button" @click="trainer.replay">從頭重播</button>
+      </TrainerActionRow>
+    </template>
 
-        <section>
-          <TrainerActionRow class="two-column composite-actions">
+    <template #actions>
+      <TrainerActionRow class="two-column">
           <button v-if="trainer.phase.value === 'dead' || trainer.phase.value === 'resolved'" class="secondary-button" type="button" @click="trainer.retry">重試同一題</button>
           <button v-if="trainer.phase.value === 'dead' || trainer.phase.value === 'resolved'" class="primary-button" type="button" @click="trainer.nextQuestion">下一題</button>
           <button v-if="trainer.phase.value === 'idle'" class="primary-button wide" type="button" @click="trainer.start">開始</button>
-          </TrainerActionRow>
-        </section>
-      </aside>
-    </div>
+      </TrainerActionRow>
+    </template>
 
-    <DeathDialog
+    <template #dialogs>
+      <DeathDialog
       :open="deathDialogOpen"
       :reason="deathDialogReason"
       @close="deathDialogOpen = false"
       @retry="retryQuestion"
       @next="nextQuestion"
-    />
-  </main>
+      />
+    </template>
+  </TrainerPageShell>
 </template>
 
 <style scoped>
-.composite-page { user-select: none; -webkit-user-select: none; }
-.composite-control-panel h2 { margin: 0; font-size: 19px; }
 .mode-description { margin: 8px 0 0; color: var(--text-helper); font-size: var(--type-secondary); line-height: var(--leading-body); }
 .analysis-heading-row { display: grid; grid-template-columns: 32px 1fr auto; gap: 9px; align-items: center; }
 .analysis-heading-row img { width: 24px; height: 32px; }
@@ -231,8 +225,4 @@ onBeforeUnmount(() => document.removeEventListener('contextmenu', preventContext
 .analysis-result-list span { color: var(--text-helper); }
 .analysis-waiting, .analysis-battle-count { margin: 8px 0 0; color: var(--text-helper); font-size: 11px; }
 .success { color: #74e7aa; } .failure { color: #ff7784; }
-.composite-hud { margin-top: 0; }
-.status-grid { margin-top: 8px; }
-.animation-controls, .composite-actions { margin-top: 8px; }
-@media (max-width: 520px) { .mechanic-nav { overflow-x: auto; } .mechanic-nav a { flex: 0 0 auto; } }
 </style>

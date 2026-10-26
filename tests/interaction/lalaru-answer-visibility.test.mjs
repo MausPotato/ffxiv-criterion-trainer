@@ -35,10 +35,10 @@ test('LalaRu page suppresses context menus globally and cleans the listener on u
 
 test('LalaRu page prevents text selection during camera dragging', async () => {
   const source = await readFile(
-    new URL('../../src/views/LalaRuTrainerView.vue', import.meta.url),
+    new URL('../../src/components/trainer/TrainerPageShell.vue', import.meta.url),
     'utf8'
   );
-  assert.match(source, /\.lalaru-page \{[^}]*user-select: none;[^}]*-webkit-user-select: none;/);
+  assert.match(source, /\.trainer-page-shell \{[^}]*user-select: none;[^}]*-webkit-user-select: none;/);
 });
 
 test('cheat sheet visibility can be toggled without changing trainer state', async () => {
@@ -48,7 +48,8 @@ test('cheat sheet visibility can be toggled without changing trainer state', asy
   );
   assert.match(source, /const showCheatSheet = ref\(true\)/);
   assert.match(source, /@click="showCheatSheet = !showCheatSheet"/);
-  assert.match(source, /<LalaRuCheatSheet id="lalaru-cheat-sheet" v-show="showCheatSheet"/);
+  assert.match(source, /v-if="showCheatSheet" #context/);
+  assert.match(source, /<LalaRuCheatSheet id="lalaru-cheat-sheet"/);
 });
 
 test('desktop LalaRu layout is viewport-bound without a page Y scrollbar', async () => {
@@ -57,7 +58,7 @@ test('desktop LalaRu layout is viewport-bound without a page Y scrollbar', async
     'utf8'
   );
   const base = await readFile(new URL('../../src/styles/base.css', import.meta.url), 'utf8');
-  assert.match(view, /<main class="trainer-page lalaru-page">/);
+  assert.match(view, /<TrainerPageShell/);
   assert.match(base, /\.trainer-page \{[^}]*height: calc\(100dvh - 72px\);[^}]*overflow: hidden;/);
   assert.match(base, /@media \(max-width: 760px\)[\s\S]*?\.trainer-page \{[^}]*height: auto;[^}]*overflow: visible;/);
 });

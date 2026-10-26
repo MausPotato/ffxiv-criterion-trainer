@@ -80,8 +80,13 @@ test('planar assignments use four compact player cards with generic teammate lab
     new URL('../../src/views/LalaRuPlanarMinesTrainerView.vue', import.meta.url),
     'utf8'
   );
+  const assignment = await readFile(
+    new URL('../../src/components/trainer/TrainerPartyAssignment.vue', import.meta.url),
+    'utf8'
+  );
   assert.match(view, /you: 'YOU', 'npc-a': '隊友 A', 'npc-b': '隊友 B', 'npc-c': '隊友 C'/);
-  assert.match(view, /class="party-list role-grid"/);
+  assert.match(view, /<TrainerPartyAssignment/);
+  assert.match(assignment, /class="party-list role-grid"/);
   assert.match(view, /class="assignment-pending">等待提示/);
 });
 
@@ -151,8 +156,8 @@ test('planar preparation starts from the arena overlay rather than the control p
     new URL('../../src/views/LalaRuPlanarMinesTrainerView.vue', import.meta.url),
     'utf8'
   );
-  assert.match(arena, /class="planar-start-overlay"/);
-  assert.match(arena, /@click="emit\('start'\)"/);
+  assert.match(arena, /<TrainerStartOverlay/);
+  assert.match(arena, /@start="emit\('start'\)"/);
   assert.match(view, /@start="trainer\.start"/);
   assert.doesNotMatch(view, /@click="trainer\.start"/);
 });
@@ -181,9 +186,10 @@ test('planar page uses the same compact heading and arena height formula as earl
     'utf8'
   );
   const base = await readFile(new URL('../../src/styles/base.css', import.meta.url), 'utf8');
-  const heading = view.match(/<div class="trainer-heading planar-heading">[\s\S]*?<\/div>\s*<nav/)?.[0] ?? '';
-  assert.doesNotMatch(heading, /section-kicker/);
-  assert.match(view, /<main class="trainer-page planar-page">/);
+  assert.match(view, /<TrainerPageShell/);
+  assert.match(view, /title="拉拉魯｜平面爆雷戰術"/);
+  assert.doesNotMatch(view, /class="[^"]*\btrainer-heading\b/);
+  assert.doesNotMatch(view, /class="[^"]*\btrainer-layout\b/);
   assert.match(base, /\.trainer-page \{[\s\S]*?height: calc\(100dvh - 72px\)/);
   assert.match(arena, /calc\(100cqh - 58px\)/);
 });
@@ -192,13 +198,15 @@ test('all LalaRu arena start buttons use the same label', async () => {
   const files = [
     'LalaRuArena.vue',
     'LalaRuCompositeArena.vue',
-    'LalaRuAnalysisArena.vue',
-    'LalaRuPlanarMinesArena.vue'
+    'LalaRuPlanarMinesArena.vue',
+    'LalaRuSpatialBombsArena.vue'
   ];
   for (const file of files) {
     const source = await readFile(new URL(`../../src/components/lalaru/${file}`, import.meta.url), 'utf8');
-    assert.match(source, /class="primary-button start-button"[^>]*>開始練習<\/button>/);
+    assert.match(source, /TrainerStartOverlay/);
   }
+  const overlay = await readFile(new URL('../../src/components/trainer/TrainerStartOverlay.vue', import.meta.url), 'utf8');
+  assert.match(overlay, /buttonLabel: '開始練習'/);
 });
 
 test('forward debuff displays the live shared countdown instead of a fixed 16 seconds', async () => {
