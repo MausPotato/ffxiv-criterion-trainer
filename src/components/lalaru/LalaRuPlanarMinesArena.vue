@@ -200,7 +200,7 @@ function mineKey(cell: PlanarMineCell): string {
 
       <TrainerStartOverlay
         v-if="phase === 'idle'"
-        description="開始後取得 Debuff，並在倒數內完成視角、站位與面向調整"
+        description="開始後取得 Debuff，在倒數內完成站位與面向調整。"
         @start="emit('start')"
       />
       <div v-else-if="phase === 'resolved'" class="planar-result success">成功</div>
@@ -210,7 +210,7 @@ function mineKey(cell: PlanarMineCell): string {
     <TrainerCameraControls
       class="camera-controls-shell"
       :rotation="cameraRotation"
-      :disabled="phase === 'idle'"
+      :visible="phase !== 'idle'"
       @rotate="rotateCameraBy"
       @reset="resetCamera"
     />

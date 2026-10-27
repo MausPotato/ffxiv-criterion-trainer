@@ -66,6 +66,7 @@ const {
 } = useLalaRuArenaInteraction({
   getPlayerPosition: () => props.playerPosition,
   canMove: () => props.phase !== 'idle' && props.phase !== 'dead' && props.phase !== 'resolved',
+  canRotateCamera: () => props.phase !== 'idle',
   updatePlayerPosition: position => emit('updatePlayerPosition', position),
   getFacingAngle: () => props.playerFacingAngle,
   updateFacingAngle: angle => emit('updatePlayerFacingAngle', angle)
@@ -285,11 +286,17 @@ function crossStyle(cell: GridCell): Record<string, string> {
       </div>
       <TrainerStartOverlay
         v-if="phase === 'idle'"
-        description="開始後揭示題目，並可用 WASD／方向鍵或拖曳持續移動"
+        description="開始後揭示配置，沿步進路線持續移動並避開爆炸。"
         @start="emit('start')"
       />
     </div>
-    <TrainerCameraControls :rotation="cameraRotation" @rotate="rotateCameraBy" @reset="resetCamera" />
+    <TrainerCameraControls
+      class="camera-controls-shell"
+      :rotation="cameraRotation"
+      :visible="phase !== 'idle'"
+      @rotate="rotateCameraBy"
+      @reset="resetCamera"
+    />
   </div>
 </template>
 
@@ -344,5 +351,5 @@ function crossStyle(cell: GridCell): Record<string, string> {
 @keyframes bomb-pop { 0% { opacity: 1; transform: scale(1); } 45% { opacity: 1; transform: scale(1.5); } 100% { opacity: 0; transform: scale(.1); } }
 @keyframes aoe-flash { 0% { opacity: .15; } 25% { opacity: 1; } 100% { opacity: 0; } }
 @keyframes cannon-flash { 0% { background: rgba(255, 235, 167, .85); } 100% { background: transparent; } }
-@media (max-width: 860px) { .spatial-arena-shell { height: auto; }.spatial-camera-viewport { width: min(100%, 680px); } }
+@media (max-width: 860px) { .spatial-arena-shell { height: auto; }.spatial-camera-viewport, .camera-controls-shell { width: min(100%, 680px); } }
 </style>

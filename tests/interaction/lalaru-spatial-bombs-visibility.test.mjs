@@ -14,7 +14,7 @@ test('spatial bombs use the shared page shell without rebuilding page layout', a
   assert.match(view, /:navigation="lalaruNavigation"/);
   assert.match(view, /<template #assignment>/);
   assert.match(view, /<template #status>/);
-  assert.match(view, /<template #actions>/);
+  assert.match(view, /<template[^>]*#actions>/);
   assert.doesNotMatch(view, /class="[^"]*\btrainer-layout\b/);
   assert.doesNotMatch(view, /class="[^"]*\bcontrol-panel\b/);
   assert.doesNotMatch(view, /<RouterLink/);

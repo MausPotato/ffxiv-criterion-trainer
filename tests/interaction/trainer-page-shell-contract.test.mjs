@@ -180,3 +180,34 @@ test('the central navigation registry preserves visible LalaRu routes and the hi
     assert.doesNotMatch(source, /<RouterLink/);
   }
 });
+
+test('migrated LalaRu headings omit development status chips', async () => {
+  const shell = await readFile(
+    new URL('../../src/components/trainer/TrainerPageShell.vue', import.meta.url),
+    'utf8'
+  );
+  assert.doesNotMatch(shell, /version(?:-chip|: string)/);
+
+  for (const file of [
+    'LalaRuTrainerView.vue',
+    'LalaRuCompositeTrainerView.vue',
+    'LalaRuPlanarMinesTrainerView.vue',
+    'LalaRuSpatialBombsTrainerView.vue'
+  ]) {
+    const source = await readFile(new URL(file, viewsDirectory), 'utf8');
+    assert.doesNotMatch(source, /version=/, `${file} must not provide a status label`);
+  }
+});
+
+test('all four visible LalaRu mechanics configure the shared cheat sheet', async () => {
+  const expectedViews = new Map([
+    ['LalaRuTrainerView.vue', 'boss'],
+    ['LalaRuCompositeTrainerView.vue', 'player'],
+    ['LalaRuPlanarMinesTrainerView.vue', 'player'],
+    ['LalaRuSpatialBombsTrainerView.vue', 'boss']
+  ]);
+  for (const [file, view] of expectedViews) {
+    const source = await readFile(new URL(file, viewsDirectory), 'utf8');
+    assert.match(source, new RegExp(`<LalaRuCheatSheet[^>]*default-view="${view}"`));
+  }
+});

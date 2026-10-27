@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import LalaRuCompositeArena from '../components/lalaru/LalaRuCompositeArena.vue';
+import LalaRuCheatSheet from '../components/lalaru/LalaRuCheatSheet.vue';
 import DeathDialog from '../components/trainer/DeathDialog.vue';
 import TrainerActionRow from '../components/trainer/TrainerActionRow.vue';
 import TrainerPageShell from '../components/trainer/TrainerPageShell.vue';
@@ -84,8 +85,7 @@ onBeforeUnmount(() => document.removeEventListener('contextmenu', preventContext
 <template>
   <TrainerPageShell
     title="拉拉魯｜複合魔紋"
-    description="避開步進地板，並調整面向讓兩次光球攻擊進入 C 字缺口。"
-    version="SECOND MECHANIC · PHASE 1"
+    description="避開步進地板，處理光球與王炮，最後讓旋轉後的缺口對準王。"
     :navigation="lalaruNavigation"
     navigation-label="拉拉魯機制選擇"
     arena-label="拉拉魯複合魔紋練習場地"
@@ -157,6 +157,7 @@ onBeforeUnmount(() => document.removeEventListener('contextmenu', preventContext
           <p v-else-if="trainer.mode.value === 'tutorial'" class="analysis-waiting">等待光球被步進 AoE 觸發。</p>
           <p v-else-if="latestAnalysisResult" class="analysis-battle-count">已完成 {{ trainer.analysisResults.value.length }} / 3 次分析判定</p>
       </section>
+      <LalaRuCheatSheet class="embedded-cheat-sheet" default-view="player" />
     </template>
 
     <template #status>
@@ -193,11 +194,10 @@ onBeforeUnmount(() => document.removeEventListener('contextmenu', preventContext
       </TrainerActionRow>
     </template>
 
-    <template #actions>
+    <template v-if="trainer.phase.value === 'dead' || trainer.phase.value === 'resolved'" #actions>
       <TrainerActionRow class="two-column">
           <button v-if="trainer.phase.value === 'dead' || trainer.phase.value === 'resolved'" class="secondary-button" type="button" @click="trainer.retry">重試同一題</button>
           <button v-if="trainer.phase.value === 'dead' || trainer.phase.value === 'resolved'" class="primary-button" type="button" @click="trainer.nextQuestion">下一題</button>
-          <button v-if="trainer.phase.value === 'idle'" class="primary-button wide" type="button" @click="trainer.start">開始</button>
       </TrainerActionRow>
     </template>
 

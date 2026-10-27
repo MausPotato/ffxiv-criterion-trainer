@@ -32,7 +32,6 @@ onBeforeUnmount(() => document.removeEventListener('contextmenu', preventContext
   <TrainerPageShell
     title="拉拉魯｜分析方向"
     description="調整位置與角色面向，讓光球攻擊進入金色 C 字環的缺口。"
-    version="ANALYSIS · FOUNDATION"
     :navigation="lalaruNavigation"
     navigation-label="拉拉魯機制選擇"
     arena-label="拉拉魯分析方向練習場地"

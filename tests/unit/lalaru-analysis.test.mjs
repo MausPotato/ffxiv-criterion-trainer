@@ -66,6 +66,25 @@ test('player III/V multiplication converts the selected side into a separate 90 
   assert.equal(analysisRotationOffsetDegrees('right', 'V'), 90);
 });
 
+test('三有五沒 pre-facing cancels the existing player rotation toward the intended result', () => {
+  const preFacingByCue = {
+    'left-III': -90,
+    'right-III': 90,
+    'left-V': 90,
+    'right-V': -90
+  };
+  for (const arrowSide of ['left', 'right']) {
+    for (const multiplier of ['III', 'V']) {
+      const initialFacing = preFacingByCue[`${arrowSide}-${multiplier}`];
+      assert.equal(
+        initialFacing + analysisRotationOffsetDegrees(arrowSide, multiplier),
+        0,
+        `${arrowSide}/${multiplier}`
+      );
+    }
+  }
+});
+
 test('an additional multiplication offset rotates the analysis gap without changing character facing', () => {
   const facingAngle = 25;
   assert.equal(analysisGapCenterAngle(facingAngle, 'front', 90), 115);

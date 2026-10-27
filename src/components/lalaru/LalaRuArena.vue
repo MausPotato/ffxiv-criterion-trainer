@@ -58,6 +58,7 @@ const {
 } = useLalaRuArenaInteraction({
   getPlayerPosition: () => props.playerPosition,
   canMove: () => props.phase !== 'resolved',
+  canRotateCamera: () => props.phase !== 'idle',
   updatePlayerPosition: position => emit('updatePlayerPosition', position),
   getFacingAngle: () => props.playerFacingAngle,
   updateFacingAngle: facingAngle => emit('updatePlayerFacingAngle', facingAngle)
@@ -173,7 +174,7 @@ function actorStyle(point: ArenaPoint, diameter: number): Record<string, string>
 
       <TrainerStartOverlay
         v-if="phase === 'idle'"
-        description="左鍵拖曳角色；右鍵拖曳旋轉視角"
+        description="開始後觀察王的旋轉提示，再移動至安全區。"
         @start="emit('start')"
       />
 
@@ -185,8 +186,7 @@ function actorStyle(point: ArenaPoint, diameter: number): Record<string, string>
     <TrainerCameraControls
       class="camera-controls-shell"
       :rotation="cameraRotation"
-      reset-label="北向上・重置視角"
-      instructions="右鍵水平拖曳自由旋轉"
+      :visible="phase !== 'idle'"
       @rotate="rotateCameraBy"
       @reset="resetCamera"
     />

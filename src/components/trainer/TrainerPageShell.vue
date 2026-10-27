@@ -6,7 +6,6 @@ import TrainerControlRail from './TrainerControlRail.vue';
 withDefaults(defineProps<{
   title: string;
   description: string;
-  version: string;
   navigation: readonly TrainerNavigationItem[];
   navigationLabel: string;
   backTo?: string;
@@ -29,7 +28,6 @@ withDefaults(defineProps<{
         <h1>{{ title }}</h1>
         <p>{{ description }}</p>
       </div>
-      <span class="version-chip">{{ version }}</span>
     </div>
 
     <nav class="mechanic-nav" :aria-label="navigationLabel">

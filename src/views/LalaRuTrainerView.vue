@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted } from 'vue';
 import LalaRuArena from '../components/lalaru/LalaRuArena.vue';
 import LalaRuCheatSheet from '../components/lalaru/LalaRuCheatSheet.vue';
 import TrainerActionRow from '../components/trainer/TrainerActionRow.vue';
@@ -14,7 +14,6 @@ import type { ArrowSide, CardinalDirection, SelectedSide } from '../mechanics/la
 import { trainerNavigationFor } from '../navigation/trainer-navigation.ts';
 
 const trainer = useLalaRuTrainer();
-const showCheatSheet = ref(true);
 const lalaruNavigation = trainerNavigationFor('lalaru');
 const modeOptions = [
   { value: 'tutorial', label: '教學模式' },
@@ -47,8 +46,7 @@ onBeforeUnmount(() => document.removeEventListener('contextmenu', preventContext
 <template>
   <TrainerPageShell
     title="拉拉魯｜旋轉角乘算"
-    description="觀察頭頂旋轉提示與乘算 Icon，走進最終 90° 安全區。"
-    version="FIRST MECHANIC · PREVIEW"
+    description="根據王的乘算 Buff 與旋轉方向，找出最終 90° 安全區。"
     :navigation="lalaruNavigation"
     navigation-label="拉拉魯機制選擇"
     arena-label="拉拉魯旋轉角乘算練習場地"
@@ -86,18 +84,11 @@ onBeforeUnmount(() => document.removeEventListener('contextmenu', preventContext
             ? '結算後顯示完整推導；結算前不會標出答案。'
             : '只保留實戰可觀察資訊；結算前不顯示方向答案。' }}
         </p>
-        <button
-          class="secondary-button cheat-sheet-toggle"
-          type="button"
-          aria-controls="lalaru-cheat-sheet"
-          :aria-expanded="showCheatSheet"
-          @click="showCheatSheet = !showCheatSheet"
-        >{{ showCheatSheet ? '隱藏乘算小抄' : '顯示乘算小抄' }}</button>
       </TrainerPracticeSettings>
     </template>
 
-    <template v-if="showCheatSheet" #context>
-      <LalaRuCheatSheet id="lalaru-cheat-sheet" />
+    <template #context>
+      <LalaRuCheatSheet default-view="boss" />
     </template>
 
     <template #status>
@@ -125,7 +116,7 @@ onBeforeUnmount(() => document.removeEventListener('contextmenu', preventContext
       </TrainerStageCard>
     </template>
 
-    <template #actions>
+    <template v-if="trainer.phase.value === 'resolved'" #actions>
       <TrainerActionRow class="two-column">
         <button
           v-if="trainer.phase.value === 'resolved'"
@@ -139,12 +130,6 @@ onBeforeUnmount(() => document.removeEventListener('contextmenu', preventContext
           type="button"
           @click="trainer.nextQuestion"
         >下一題</button>
-        <button
-          v-if="trainer.phase.value === 'idle'"
-          class="primary-button wide"
-          type="button"
-          @click="trainer.start"
-        >開始</button>
       </TrainerActionRow>
     </template>
 
@@ -174,7 +159,6 @@ onBeforeUnmount(() => document.removeEventListener('contextmenu', preventContext
 
 <style scoped>
 .mode-description { margin: 8px 0 0; color: var(--text-helper); font-size: var(--type-secondary); line-height: var(--leading-body); }
-.cheat-sheet-toggle { width: 100%; margin-top: 8px; padding: 7px 10px; font-size: var(--type-body); }
 .success { color: #74e7aa; }
 .failure { color: #ff7784; }
 .solution-chain { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; margin: 10px 0; color: #bdcdd5; font-size: 14px; line-height: 1.8; }

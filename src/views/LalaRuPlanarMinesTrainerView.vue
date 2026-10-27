@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted } from 'vue';
 import LalaRuPlanarMinesArena from '../components/lalaru/LalaRuPlanarMinesArena.vue';
+import LalaRuCheatSheet from '../components/lalaru/LalaRuCheatSheet.vue';
 import DeathDialog from '../components/trainer/DeathDialog.vue';
 import TrainerActionRow from '../components/trainer/TrainerActionRow.vue';
 import TrainerPageShell from '../components/trainer/TrainerPageShell.vue';
@@ -55,8 +56,7 @@ onBeforeUnmount(() => document.removeEventListener('contextmenu', preventContext
 <template>
   <TrainerPageShell
     title="拉拉魯｜平面爆雷戰術"
-    description="辨認 3×3 地雷缺口，依攻略側預覽四人起始站位。"
-    version="NEXT MECHANIC · SETUP"
+    description="依減算層數與分攤安排站位，反推旋轉前面向並沿正確方向踩雷。"
     :navigation="lalaruNavigation"
     navigation-label="拉拉魯機制選擇"
     arena-label="拉拉魯平面爆雷練習場地"
@@ -161,6 +161,7 @@ onBeforeUnmount(() => document.removeEventListener('contextmenu', preventContext
           <span v-else class="assignment-pending">等待提示</span>
         </article>
       </TrainerPartyAssignment>
+      <LalaRuCheatSheet class="embedded-cheat-sheet" default-view="player" />
     </template>
 
     <template #status>

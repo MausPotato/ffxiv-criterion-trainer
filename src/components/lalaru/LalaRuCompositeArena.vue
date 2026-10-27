@@ -93,6 +93,7 @@ const {
 } = useLalaRuArenaInteraction({
   getPlayerPosition: () => props.playerPosition,
   canMove: () => props.phase !== 'resolved' && props.phase !== 'dead',
+  canRotateCamera: () => props.phase !== 'idle',
   updatePlayerPosition: position => emit('updatePlayerPosition', position),
   getFacingAngle: () => props.playerFacingAngle,
   updateFacingAngle: facingAngle => emit('updatePlayerFacingAngle', facingAngle)
@@ -336,7 +337,7 @@ function orbStyle(orb: CompositeOrb): Record<string, string> {
 
       <TrainerStartOverlay
         v-if="phase === 'idle'"
-        description="3 秒預覽後，兩側 AoE 每秒同步前進一格"
+        description="開始後先預覽步進路線，再處理光球、王炮與缺口。"
         @start="emit('start')"
       />
 
@@ -350,6 +351,7 @@ function orbStyle(orb: CompositeOrb): Record<string, string> {
     <TrainerCameraControls
       class="camera-controls-shell"
       :rotation="cameraRotation"
+      :visible="phase !== 'idle'"
       @rotate="rotateCameraBy"
       @reset="resetCamera"
     />

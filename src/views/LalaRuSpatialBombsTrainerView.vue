@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import LalaRuSpatialBombsArena from '../components/lalaru/LalaRuSpatialBombsArena.vue';
+import LalaRuCheatSheet from '../components/lalaru/LalaRuCheatSheet.vue';
 import DeathDialog from '../components/trainer/DeathDialog.vue';
 import TrainerActionRow from '../components/trainer/TrainerActionRow.vue';
 import TrainerPageShell from '../components/trainer/TrainerPageShell.vue';
@@ -76,8 +77,7 @@ onBeforeUnmount(() => document.removeEventListener('contextmenu', preventContext
 <template>
   <TrainerPageShell
     title="拉拉魯｜立體炸彈戰術"
-    description="在雙路線逐格推進時持續移動，逐次消除減算炸彈，最後處理旋轉角魔紋炮。"
-    version="FOURTH MECHANIC · LIVE MOVEMENT"
+    description="依減算層數處理炸彈與步進地板，最後躲避旋轉魔紋炮。"
     :navigation="lalaruNavigation"
     navigation-label="拉拉魯機制選擇"
     arena-label="拉拉魯立體炸彈練習場地"
@@ -134,6 +134,7 @@ onBeforeUnmount(() => document.removeEventListener('contextmenu', preventContext
               <span v-else class="assignment-pending">等待提示</span>
             </article>
       </TrainerPartyAssignment>
+      <LalaRuCheatSheet class="embedded-cheat-sheet" default-view="boss" />
     </template>
 
     <template #status>
@@ -156,9 +157,8 @@ onBeforeUnmount(() => document.removeEventListener('contextmenu', preventContext
       </TrainerStageCard>
     </template>
 
-    <template #actions>
+    <template v-if="trainer.phase.value === 'dead' || trainer.phase.value === 'resolved'" #actions>
       <TrainerActionRow class="two-column">
-            <button v-if="trainer.phase.value === 'idle'" class="primary-button wide" type="button" @click="trainer.start">開始演練</button>
             <button v-if="trainer.phase.value === 'dead' || trainer.phase.value === 'resolved'" class="secondary-button" type="button" @click="retry">重試本題</button>
             <button v-if="trainer.phase.value === 'dead' || trainer.phase.value === 'resolved'" class="primary-button" type="button" @click="nextQuestion">下一題</button>
       </TrainerActionRow>

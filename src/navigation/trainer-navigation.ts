@@ -57,3 +57,15 @@ export function trainerNavigationFor(
 ): readonly TrainerNavigationItem[] {
   return TRAINER_NAVIGATION_REGISTRY[group].filter(item => item.showInNavigation !== false);
 }
+
+export function trainerNavigationGroupForPath(
+  path: string
+): TrainerNavigationGroup | null {
+  for (const [group, items] of Object.entries(TRAINER_NAVIGATION_REGISTRY) as [
+    TrainerNavigationGroup,
+    readonly TrainerNavigationItem[]
+  ][]) {
+    if (items.some(item => path === item.to || path.startsWith(`${item.to}/`))) return group;
+  }
+  return null;
+}

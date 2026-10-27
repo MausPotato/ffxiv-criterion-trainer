@@ -1,5 +1,10 @@
 <script setup lang="ts">
-import { RouterLink, RouterView } from 'vue-router';
+import { computed } from 'vue';
+import { RouterLink, RouterView, useRoute } from 'vue-router';
+import { trainerNavigationGroupForPath } from './navigation/trainer-navigation.ts';
+
+const route = useRoute();
+const activeTrainerGroup = computed(() => trainerNavigationGroupForPath(route.path));
 </script>
 
 <template>
@@ -14,8 +19,14 @@ import { RouterLink, RouterView } from 'vue-router';
       </RouterLink>
       <nav aria-label="主要導覽">
         <RouterLink to="/">迷宮一覽</RouterLink>
-        <RouterLink to="/aloalo-island/ketuduke">凱圖嘟凱</RouterLink>
-        <RouterLink to="/aloalo-island/lalaru/rotation">拉拉魯</RouterLink>
+        <RouterLink
+          to="/aloalo-island/ketuduke"
+          :class="{ 'router-link-active': activeTrainerGroup === 'ketuduke' }"
+        >凱圖嘟凱</RouterLink>
+        <RouterLink
+          to="/aloalo-island/lalaru/rotation"
+          :class="{ 'router-link-active': activeTrainerGroup === 'lalaru' }"
+        >拉拉魯</RouterLink>
       </nav>
     </header>
 
