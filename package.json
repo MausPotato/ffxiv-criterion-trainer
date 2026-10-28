@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vue-tsc --noEmit && vite build",
-    "test": "node --import ./tests/helpers/register-typescript.mjs --test",
+    "test": "node ./scripts/run-tests-with-baseline.mjs",
+    "test:strict": "node --import ./tests/helpers/register-typescript.mjs --test",
     "typecheck": "vue-tsc --noEmit"
   },
   "dependencies": {

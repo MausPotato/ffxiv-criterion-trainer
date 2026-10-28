@@ -1,4 +1,4 @@
-import { createRouter, createWebHistory } from 'vue-router';
+import { createRouter, createWebHashHistory } from 'vue-router';
 import HomeView from '../views/HomeView.vue';
 import KetudukeTrainerView from '../views/KetudukeTrainerView.vue';
 import KetudukeBubblePreviewView from '../views/KetudukeBubblePreviewView.vue';
@@ -9,7 +9,7 @@ import LalaRuPlanarMinesTrainerView from '../views/LalaRuPlanarMinesTrainerView.
 import LalaRuSpatialBombsTrainerView from '../views/LalaRuSpatialBombsTrainerView.vue';
 
 export const router = createRouter({
-  history: createWebHistory(),
+  history: createWebHashHistory(import.meta.env.BASE_URL),
   scrollBehavior: () => ({ top: 0 }),
   routes: [
     {
