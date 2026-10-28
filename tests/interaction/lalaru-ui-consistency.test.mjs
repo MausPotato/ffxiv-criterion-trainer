@@ -58,3 +58,20 @@ test('the arena overlay is the only idle start entry for all four mechanics', as
   const composite = await readFile(new URL('LalaRuCompositeTrainerView.vue', viewDirectory), 'utf8');
   assert.match(composite, />從頭重播</);
 });
+
+test('all LalaRu stage cards share the waiting copy and muted clock presentation', async () => {
+  const visibleViews = [
+    'LalaRuTrainerView.vue',
+    'LalaRuCompositeTrainerView.vue',
+    'LalaRuPlanarMinesTrainerView.vue',
+    'LalaRuSpatialBombsTrainerView.vue'
+  ];
+
+  for (const file of visibleViews) {
+    const source = await readFile(new URL(file, viewDirectory), 'utf8');
+    assert.match(source, /'待開始'/, `${file} must use the shared waiting label`);
+    assert.match(source, /'準備就緒'/, `${file} must avoid repeating the waiting label`);
+    assert.match(source, /:clock-tone="trainer\.phase\.value === 'idle' \? 'muted' : 'default'"/);
+    assert.doesNotMatch(source, /Ⅱ WAITING|return 'WAITING'/);
+  }
+});

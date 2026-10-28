@@ -19,6 +19,7 @@ import type { LalaRuQuestion } from '../../mechanics/lalaru/types.ts';
 import type { CardinalDirection } from '../../mechanics/lalaru/types.ts';
 import RotationCueIcon from './RotationCueIcon.vue';
 import TrainerCameraControls from '../trainer/TrainerCameraControls.vue';
+import MechanicIcon from '../trainer/MechanicIcon.vue';
 import { MECHANIC_ICONS } from '../../assets/mechanic-icons.ts';
 import TrainerStartOverlay from '../trainer/TrainerStartOverlay.vue';
 
@@ -216,11 +217,11 @@ function crossStyle(cell: GridCell): Record<string, string> {
           :style="cellStyle(bomb.cell)"
           aria-label="立體炸彈"
         >
-          <span class="bomb-cube">
-            <i class="cube-face cube-top"></i>
-            <i class="cube-face cube-left"></i>
-            <i class="cube-face cube-right"></i>
-          </span>
+          <svg class="bomb-cube" viewBox="0 0 100 100" aria-hidden="true">
+            <polygon class="cube-face cube-top" points="50,4 96,28 50,52 4,28" />
+            <polygon class="cube-face cube-left" points="4,28 50,52 50,96 4,72" />
+            <polygon class="cube-face cube-right" points="50,52 96,28 96,72 50,96" />
+          </svg>
         </div>
 
         <div
@@ -248,13 +249,20 @@ function crossStyle(cell: GridCell): Record<string, string> {
         <div class="spatial-boss" :style="actorStyle(LALARU_BOSS_POSITION, .72)">
           <span class="boss-facing" aria-hidden="true"></span>
           <span>拉拉魯</span>
+        </div>
+
+        <div v-if="showCannon" class="boss-cannon-cues">
           <RotationCueIcon
             v-if="phase === 'cannon-countdown'"
-            class="boss-rotation-cue"
             :arrow-side="cannonQuestion.arrowSide"
             :dot-count="cannonSeconds"
             :animation-key="cannonImpactKey"
             :playing="true"
+          />
+          <MechanicIcon
+            class="boss-multiplier-icon"
+            :name="cannonQuestion.multiplier === 'III' ? 'multiplyIII' : 'multiplyV'"
+            :alt="`Boss 乘算 ${cannonQuestion.multiplier}`"
           />
         </div>
 
@@ -305,6 +313,7 @@ function crossStyle(cell: GridCell): Record<string, string> {
 .spatial-camera-viewport { position: relative; width: min(100%, 680px, calc(100cqh - 58px)); aspect-ratio: 1; overflow: hidden; border-radius: 15px; background: #07131c; container-type: inline-size; cursor: grab; touch-action: none; }
 .spatial-camera-viewport.rotating-camera { cursor: grabbing; }
 .spatial-arena { position: absolute; inset: 0; overflow: hidden; border: 2px solid #527285; border-radius: 15px; background: radial-gradient(circle at 50% 50%, rgba(74, 129, 139, .2), transparent 48%), #172a32; transform: rotate(var(--camera-rotation)); transform-origin: center; transition: transform .18s ease; }
+.spatial-camera-viewport.rotating-camera .spatial-arena { transition: none; }
 .spatial-arena::after { position: absolute; inset: 0; z-index: 24; border: 1px solid rgba(171, 232, 244, .25); border-radius: 12px; content: ''; pointer-events: none; }
 .cell-layer { position: absolute; inset: 0; }
 .floor-cell { position: absolute; width: 20%; height: 20%; border: 1px solid rgba(138, 177, 183, .24); background: linear-gradient(135deg, rgba(69, 86, 75, .18), rgba(17, 34, 39, .16)); transition: background .14s ease, box-shadow .14s ease; }
@@ -318,12 +327,9 @@ function crossStyle(cell: GridCell): Record<string, string> {
 .start-marker { color: #ffe568; box-shadow: inset 0 0 0 3px #75eaff, inset 0 0 22px rgba(70, 224, 255, .62); }
 .turn-marker { color: #79dfff; }
 .white-orb span { width: 42%; aspect-ratio: 1; border: 2px solid white; border-radius: 50%; background: radial-gradient(circle at 35% 30%, white, #c8eafd 35%, #7298b7 72%); box-shadow: 0 0 15px 5px rgba(225, 247, 255, .62); }
-.bomb-cube { position: relative; display: block; width: 52%; height: 58%; filter: drop-shadow(0 0 7px #ff6b22) drop-shadow(0 0 5px #ffd85f); animation: cube-float 1.6s ease-in-out infinite; }
-.cube-face { position: absolute; inset: 0; display: block; border: 1px solid rgba(255, 242, 172, .88); }
-.cube-top { background: linear-gradient(145deg, #fff4a0 0%, #ffbd32 34%, #dd4d1e 100%); clip-path: polygon(50% 0, 100% 25%, 50% 50%, 0 25%); box-shadow: inset 0 0 10px #fff29a; }
-.cube-left { background: linear-gradient(135deg, #ff9c25, #a91619 82%); clip-path: polygon(0 25%, 50% 50%, 50% 100%, 0 75%); box-shadow: inset 0 0 10px #ff6b23; }
-.cube-right { background: linear-gradient(225deg, #ff7a20, #680d18 82%); clip-path: polygon(50% 50%, 100% 25%, 100% 75%, 50% 100%); box-shadow: inset 0 0 10px #dc341d; }
-.bomb-cube::before { position: absolute; top: 25%; left: 0; z-index: 2; width: 100%; height: 75%; background: linear-gradient(30deg, transparent 48.5%, rgba(255,244,170,.9) 49.5% 51%, transparent 52%), linear-gradient(-30deg, transparent 48.5%, rgba(255,225,111,.7) 49.5% 51%, transparent 52%); clip-path: polygon(0 0, 50% 33.33%, 100% 0, 100% 66.66%, 50% 100%, 0 66.66%); content: ''; filter: drop-shadow(0 0 3px #ffe166); pointer-events: none; }
+.bomb-cube { display: block; width: 52%; height: 58%; overflow: visible; filter: drop-shadow(0 0 5px rgba(255, 91, 31, .9)) drop-shadow(0 0 3px rgba(255, 216, 95, .72)); animation: cube-float 1.6s ease-in-out infinite; }
+.cube-face { stroke: rgba(255, 228, 133, .9); stroke-width: 2; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+.cube-top { fill: #ffc84b; }.cube-left { fill: #dc5b24; }.cube-right { fill: #8f241e; }
 .white-orb.exploding span, .spatial-bomb.exploding .bomb-cube { animation: bomb-pop var(--explosion-duration) ease-out both; }
 .cross-explosion { position: absolute; inset: 0; z-index: 10; pointer-events: none; }
 .cross-row, .cross-column { position: absolute; display: block; background: rgba(255, 103, 44, .55); box-shadow: inset 0 0 18px #fff19a, 0 0 15px #ff552a; animation: aoe-flash var(--explosion-duration) ease-out both; }
@@ -335,7 +341,9 @@ function crossStyle(cell: GridCell): Record<string, string> {
 .spatial-boss { position: absolute; z-index: 12; display: grid; aspect-ratio: 1; place-items: center; border: 3px solid #efc96d; border-radius: 50%; color: #fff4c4; background: radial-gradient(circle, #5c4932, #211b19 72%); transform: translate(-50%, -50%); box-shadow: 0 0 0 4px rgba(239, 201, 109, .15), 0 0 22px rgba(0, 0, 0, .65); pointer-events: none; }
 .spatial-boss > span:not(.boss-facing) { font-size: clamp(9px, 1.5cqw, 14px); font-weight: 850; }
 .boss-facing { position: absolute; top: -12px; left: 50%; width: 0; height: 0; border-right: 7px solid transparent; border-bottom: 11px solid #ffdb78; border-left: 7px solid transparent; transform: translateX(-50%); }
-.boss-rotation-cue { position: absolute; bottom: 105%; left: 50%; transform: translateX(-50%) scale(.72); transform-origin: bottom center; }
+.boss-cannon-cues { position: absolute; top: 31%; left: 50%; z-index: 19; display: flex; align-items: center; gap: 7px; transform: translate(-50%, -50%); pointer-events: none; }
+.boss-cannon-cues :deep(.rotation-cue-icon) { transform: scale(.82); }
+.boss-multiplier-icon { width: 30px; height: 40px; filter: drop-shadow(0 0 6px rgba(109, 229, 220, .55)) drop-shadow(0 2px 4px rgba(0, 0, 0, .85)); image-rendering: auto; }
 .spatial-actor { position: absolute; z-index: 16; display: grid; aspect-ratio: 1; padding: 0; place-items: center; border: 2px solid #72dcef; border-radius: 50%; color: #f0fdff; background: #174e68; transform: translate(-50%, -50%); box-shadow: 0 0 0 4px rgba(91, 215, 239, .15), 0 4px 12px rgba(0, 0, 0, .5); pointer-events: none; }
 .spatial-actor.npc { border-color: #95d7ae; background: #24533d; transition: left var(--npc-move-duration) linear, top var(--npc-move-duration) linear; }
 .spatial-actor.player { border-color: #ffe26f; cursor: grab; pointer-events: auto; touch-action: none; }.spatial-actor.player.dragging { cursor: grabbing; box-shadow: 0 0 0 6px rgba(255, 255, 255, .32); }

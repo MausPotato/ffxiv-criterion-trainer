@@ -2,6 +2,7 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import LalaRuSpatialBombsArena from '../components/lalaru/LalaRuSpatialBombsArena.vue';
 import LalaRuCheatSheet from '../components/lalaru/LalaRuCheatSheet.vue';
+import LalaRuSpatialBombsCheatSheet from '../components/lalaru/LalaRuSpatialBombsCheatSheet.vue';
 import DeathDialog from '../components/trainer/DeathDialog.vue';
 import TrainerActionRow from '../components/trainer/TrainerActionRow.vue';
 import TrainerPageShell from '../components/trainer/TrainerPageShell.vue';
@@ -28,7 +29,7 @@ const subtractionIcons = {
 const questionRevealed = computed(() => trainer.phase.value !== 'idle' && trainer.phase.value !== 'lead-in');
 const stageBadge = computed(() => trainer.phase.value === 'idle' ? '準備階段' : trainer.phase.value === 'resolved' || trainer.phase.value === 'dead' ? '結算階段' : '演出階段');
 const stageClock = computed(() => {
-  if (trainer.phase.value === 'idle') return 'WAITING';
+  if (trainer.phase.value === 'idle') return '待開始';
   if (trainer.phase.value === 'lead-in') return 'HIDDEN';
   if (trainer.phase.value === 'preview') return 'READY';
   if (trainer.phase.value === 'cannon-countdown') return `${trainer.cannonSeconds.value}s`;
@@ -37,7 +38,7 @@ const stageClock = computed(() => {
   return `STEP ${trainer.currentStep.value}`;
 });
 const stageTitle = computed(() => ({
-  idle: '觀察配置並調整初始位置',
+  idle: '準備就緒',
   'lead-in': '題目準備中',
   preview: '立體魔法陣準備中',
   stepping: `魔紋步進 ${trainer.currentStep.value} / 9`,
@@ -58,7 +59,7 @@ const stageDescription = computed(() => {
 const deathReason = computed(() => {
   const death = trainer.deathRecord.value;
   if (!death) return '';
-  return `${death.reason}｜剩餘 ${death.remainingLayers} 層｜位置 (${death.position.x.toFixed(2)}, ${death.position.y.toFixed(2)})｜${Math.round(death.elapsedMs)}ms`;
+  return `死因：${death.reason}`;
 });
 const preventContextMenu = (event: MouseEvent): void => event.preventDefault();
 watch(() => trainer.deathRecord.value, death => { deathDialogOpen.value = death !== null; });
@@ -134,7 +135,10 @@ onBeforeUnmount(() => document.removeEventListener('contextmenu', preventContext
               <span v-else class="assignment-pending">等待提示</span>
             </article>
       </TrainerPartyAssignment>
-      <LalaRuCheatSheet class="embedded-cheat-sheet" default-view="boss" />
+      <div class="spatial-cheat-sheets">
+        <LalaRuSpatialBombsCheatSheet default-open />
+        <LalaRuCheatSheet default-view="boss" :available-views="['boss']" />
+      </div>
     </template>
 
     <template #status>
@@ -145,7 +149,7 @@ onBeforeUnmount(() => document.removeEventListener('contextmenu', preventContext
             wins-label="成功"
             :show-streak="false"
       />
-      <TrainerStageCard :badge="stageBadge" :clock="stageClock" :title="stageTitle" :status="stageDescription">
+      <TrainerStageCard :badge="stageBadge" :clock="stageClock" :clock-tone="trainer.phase.value === 'idle' ? 'muted' : 'default'" :title="stageTitle" :status="stageDescription">
             <div v-if="trainer.phase.value === 'lead-in'" class="stage-progress is-timed" :style="{ '--stage-duration': `${SPATIAL_BOMBS_TIMING.revealDelayMs}ms` }"><span></span></div>
             <div v-else-if="trainer.phase.value === 'preview'" class="stage-progress is-timed" :style="{ '--stage-duration': `${SPATIAL_BOMBS_TIMING.previewDurationMs}ms` }"><span></span></div>
             <dl class="trainer-info-grid">
@@ -183,4 +187,5 @@ onBeforeUnmount(() => document.removeEventListener('contextmenu', preventContext
 .assignment-pending, .layer-caption { color: var(--text-helper); font-size: var(--type-body); }
 .spatial-layer-icon { width: 34px; height: 34px; object-fit: contain; filter: drop-shadow(0 2px 3px rgba(0,0,0,.6)); }
 .assignment-card .cleared-layer { display: grid; width: 27px; height: 27px; place-items: center; border: 1px solid #69daa5; border-radius: 5px; color: #86ffc0; background: #0b3028; font: 900 13px ui-monospace, monospace; }
+.spatial-cheat-sheets { display: grid; gap: var(--space-section); margin-top: var(--space-section); }
 </style>

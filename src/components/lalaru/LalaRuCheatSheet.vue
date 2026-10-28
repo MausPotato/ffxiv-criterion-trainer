@@ -1,18 +1,24 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import { MECHANIC_ICONS } from '../../assets/mechanic-icons.ts';
+import TrainerQuickReference from '../trainer/TrainerQuickReference.vue';
 
 type LalaRuCheatSheetView = 'boss' | 'player';
 
 const props = withDefaults(defineProps<{
   defaultView?: LalaRuCheatSheetView;
   defaultOpen?: boolean;
+  availableViews?: readonly LalaRuCheatSheetView[];
 }>(), {
   defaultView: 'boss',
-  defaultOpen: false
+  defaultOpen: false,
+  availableViews: () => ['boss', 'player']
 });
 
-const activeView = ref<LalaRuCheatSheetView>(props.defaultView);
+const activeView = ref<LalaRuCheatSheetView>(
+  props.availableViews.includes(props.defaultView) ? props.defaultView : props.availableViews[0] ?? 'boss'
+);
+const showViewSwitch = computed(() => props.availableViews.length > 1);
 const bossRules = [
   {
     multiplier: 'V',
@@ -61,139 +67,124 @@ const playerRules = [
 </script>
 
 <template>
-  <details class="cheat-sheet" :open="defaultOpen">
-    <summary>
-      <span><small>QUICK REFERENCE</small><strong>乘算小抄</strong></span>
-      <b>{{ activeView === 'boss' ? '王・三沒五有' : '玩家・三有五沒' }}</b>
-    </summary>
+  <TrainerQuickReference class="cheat-sheet" title="乘算小抄" :default-open="defaultOpen">
+      <div v-if="showViewSwitch" class="view-switch" role="group" aria-label="乘算小抄檢視">
+        <button
+          v-if="availableViews.includes('boss')"
+          type="button"
+          :class="{ active: activeView === 'boss' }"
+          :aria-pressed="activeView === 'boss'"
+          @click="activeView = 'boss'"
+        >王的安全區</button>
+        <button
+          v-if="availableViews.includes('player')"
+          type="button"
+          :class="{ active: activeView === 'player' }"
+          :aria-pressed="activeView === 'player'"
+          @click="activeView = 'player'"
+        >玩家預先面向</button>
+      </div>
 
-    <div class="view-switch" role="group" aria-label="乘算小抄檢視">
-      <button
-        type="button"
-        :class="{ active: activeView === 'boss' }"
-        :aria-pressed="activeView === 'boss'"
-        @click="activeView = 'boss'"
-      >王</button>
-      <button
-        type="button"
-        :class="{ active: activeView === 'player' }"
-        :aria-pressed="activeView === 'player'"
-        @click="activeView = 'player'"
-      >玩家</button>
-    </div>
-
-    <div class="cheat-sheet-heading">
-      <div>
-        <h2>{{ activeView === 'boss' ? '王的乘算安全區' : '玩家的預先面向' }}</h2>
+      <div class="cheat-sheet-heading">
+        <h2>{{ activeView === 'boss' ? '王的乘算安全區｜三沒五有' : '玩家預先面向｜三有五沒' }}</h2>
         <p>{{ activeView === 'boss'
           ? '從王的 Buff 與箭頭，判斷魔紋炮旋轉後的安全側。'
           : '先決定旋轉後要讓缺口或前進方向朝哪裡，再反推旋轉前面向。' }}</p>
       </div>
-      <span>{{ activeView === 'boss' ? '三沒五有' : '三有五沒' }}</span>
-    </div>
 
-    <div v-if="activeView === 'boss'" class="rule-grid">
-      <article v-for="rule in bossRules" :key="rule.multiplier" class="rule-column">
-        <div class="rule-copy">
-          <img :src="rule.icon" :alt="`${rule.multiplier} 乘算圖示`">
-          <p><strong>{{ rule.lead }}</strong><br>看<strong class="rule-keyword">{{ rule.keyword }}</strong>箭頭那邊</p>
-        </div>
+      <div v-if="activeView === 'boss'" class="rule-grid">
+        <article v-for="rule in bossRules" :key="rule.multiplier" class="rule-column">
+          <div class="rule-copy">
+            <img :src="rule.icon" :alt="`${rule.multiplier} 乘算圖示`">
+            <p><strong>{{ rule.lead }}</strong><br>看<strong class="rule-keyword">{{ rule.keyword }}</strong>箭頭那邊</p>
+          </div>
 
-        <div class="rule-examples" aria-hidden="true">
-          <svg
-            v-for="example in rule.cases"
-            :key="example.arrow"
-            class="rule-diagram"
-            viewBox="0 0 100 82"
-          >
-            <circle class="cue-disc" cx="50" cy="43" r="27" />
-            <path class="cue-triangle" d="M 50 4 L 42 17 L 58 17 Z" />
-            <path
-              v-if="example.arrow === 'left'"
-              class="cue-arrow left"
-              d="M 33 69 L 20 56 L 20 34 M 20 34 L 10 45 M 20 34 L 30 45"
-            />
-            <path
-              v-else
-              class="cue-arrow right"
-              d="M 67 69 L 80 56 L 80 34 M 80 34 L 70 45 M 80 34 L 90 45"
-            />
-            <circle
-              class="safe-mark"
-              :cx="example.safe === 'left' ? 20 : 80"
-              cy="48"
-              r="17"
-            />
-          </svg>
-        </div>
-      </article>
-    </div>
+          <div class="rule-examples" aria-hidden="true">
+            <svg
+              v-for="example in rule.cases"
+              :key="example.arrow"
+              class="rule-diagram"
+              viewBox="0 0 100 82"
+            >
+              <circle class="cue-disc" cx="50" cy="43" r="27" />
+              <path class="cue-triangle" d="M 50 4 L 42 17 L 58 17 Z" />
+              <path
+                v-if="example.arrow === 'left'"
+                class="cue-arrow left"
+                d="M 33 69 L 20 56 L 20 34 M 20 34 L 10 45 M 20 34 L 30 45"
+              />
+              <path
+                v-else
+                class="cue-arrow right"
+                d="M 67 69 L 80 56 L 80 34 M 80 34 L 70 45 M 80 34 L 90 45"
+              />
+              <circle
+                class="safe-mark"
+                :cx="example.safe === 'left' ? 20 : 80"
+                cy="48"
+                r="17"
+              />
+            </svg>
+          </div>
+        </article>
+      </div>
 
-    <div v-else class="rule-grid player-rules">
-      <article v-for="rule in playerRules" :key="rule.multiplier" class="rule-column">
-        <div class="rule-copy">
-          <img :src="rule.icon" :alt="`${rule.multiplier} 乘算圖示`">
-          <p><strong>{{ rule.lead }}</strong><br>旋轉前面向<strong class="rule-keyword">{{ rule.keyword }}</strong>箭頭側</p>
-        </div>
+      <div v-else class="rule-grid player-rules">
+        <article v-for="rule in playerRules" :key="rule.multiplier" class="rule-column">
+          <div class="rule-copy">
+            <img :src="rule.icon" :alt="`${rule.multiplier} 乘算圖示`">
+            <p><strong>{{ rule.lead }}</strong><br>旋轉前面向<strong class="rule-keyword">{{ rule.keyword }}</strong>箭頭側</p>
+          </div>
 
-        <div class="rule-examples" aria-hidden="true">
-          <svg
-            v-for="example in rule.cases"
-            :key="example.arrow"
-            class="rule-diagram"
-            viewBox="0 0 100 82"
-          >
-            <circle class="cue-disc" cx="50" cy="43" r="27" />
-            <path class="cue-triangle" d="M 50 4 L 42 17 L 58 17 Z" />
-            <path
-              v-if="example.arrow === 'left'"
-              class="cue-arrow left"
-              d="M 33 69 L 20 56 L 20 34 M 20 34 L 10 45 M 20 34 L 30 45"
-            />
-            <path
-              v-else
-              class="cue-arrow right"
-              d="M 67 69 L 80 56 L 80 34 M 80 34 L 70 45 M 80 34 L 90 45"
-            />
-            <path
-              class="facing-mark"
-              :class="example.facing"
-              :d="example.facing === 'left' ? 'M 50 43 L 19 43 M 19 43 L 29 35 M 19 43 L 29 51' : 'M 50 43 L 81 43 M 81 43 L 71 35 M 81 43 L 71 51'"
-            />
-          </svg>
-        </div>
-      </article>
-    </div>
+          <div class="rule-examples" aria-hidden="true">
+            <svg
+              v-for="example in rule.cases"
+              :key="example.arrow"
+              class="rule-diagram"
+              viewBox="0 0 100 82"
+            >
+              <circle class="cue-disc" cx="50" cy="43" r="27" />
+              <path class="cue-triangle" d="M 50 4 L 42 17 L 58 17 Z" />
+              <path
+                v-if="example.arrow === 'left'"
+                class="cue-arrow left"
+                d="M 33 69 L 20 56 L 20 34 M 20 34 L 10 45 M 20 34 L 30 45"
+              />
+              <path
+                v-else
+                class="cue-arrow right"
+                d="M 67 69 L 80 56 L 80 34 M 80 34 L 70 45 M 80 34 L 90 45"
+              />
+              <path
+                class="facing-mark"
+                :class="example.facing"
+                :d="example.facing === 'left' ? 'M 50 43 L 19 43 M 19 43 L 29 35 M 19 43 L 29 51' : 'M 50 43 L 81 43 M 81 43 L 71 35 M 81 43 L 71 51'"
+              />
+            </svg>
+          </div>
+        </article>
+      </div>
 
-    <p class="viewpoint-note">
-      {{ activeView === 'boss'
-        ? '紅圈標示旋轉後的安全側；先把初始安全缺口想成在自己腳下。'
-        : '白箭頭標示旋轉前的角色面向；乘算仍使用同一套旋轉規則。' }}
-    </p>
-  </details>
+      <p class="viewpoint-note">
+        {{ activeView === 'boss'
+          ? '紅圈標示旋轉後的安全側；先把初始安全缺口想成在自己腳下。'
+          : '白箭頭標示旋轉前的角色面向；乘算仍使用同一套旋轉規則。' }}
+      </p>
+  </TrainerQuickReference>
 </template>
 
 <style scoped>
-.cheat-sheet { border: 1px solid var(--line-soft); border-radius: 10px; background: rgba(8, 17, 24, .3); }
-.cheat-sheet.embedded-cheat-sheet { margin-top: var(--space-section); }
-.cheat-sheet summary { display: flex; min-height: 42px; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 10px; cursor: pointer; list-style: none; }
-.cheat-sheet summary::-webkit-details-marker { display: none; }
-.cheat-sheet summary::after { content: '＋'; color: var(--text-helper); font-weight: 800; }
-.cheat-sheet[open] summary::after { content: '－'; }
-.cheat-sheet summary > span { display: grid; gap: 1px; }
-.cheat-sheet summary small { color: var(--text-helper); font: 750 9px ui-monospace, monospace; letter-spacing: .12em; }
-.cheat-sheet summary strong { color: #f2f8fb; font-size: 14px; }
-.cheat-sheet summary b { margin-left: auto; color: #f5c568; font: 750 11px ui-monospace, monospace; letter-spacing: .05em; }
-.view-switch { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin: 0 10px 10px; padding: 3px; border-radius: 8px; background: #09141c; }
-.view-switch button { padding: 6px 8px; border: 1px solid transparent; border-radius: 6px; color: var(--text-helper); background: transparent; font: inherit; font-size: 12px; font-weight: 750; cursor: pointer; }
-.view-switch button.active { border-color: #4cb3ce; color: #dffaff; background: #173947; }
-.cheat-sheet-heading { display: flex; align-items: end; justify-content: space-between; gap: 12px; }
-.cheat-sheet-heading h2 { margin: 0; font-size: 19px; }
-.cheat-sheet-heading { margin: 0 10px; }
-.cheat-sheet-heading p { margin: 3px 0 0; color: var(--text-helper); font-size: 11px; line-height: 1.45; }
-.cheat-sheet-heading > span { color: #f5c568; font: 750 12px ui-monospace, monospace; letter-spacing: .08em; }
+.view-switch { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 3px; padding: 3px; border: 1px solid var(--control-border); border-radius: var(--radius-control); background: var(--surface-inset); }
+.view-switch button { appearance: none; min-width: 0; min-height: 34px; padding: 6px 8px; border: 1px solid transparent; border-radius: calc(var(--radius-control) - 3px); color: var(--text-helper); background: transparent; font: inherit; font-size: var(--type-small); font-weight: 750; line-height: 1.2; text-align: center; cursor: pointer; transition: border-color .14s ease, color .14s ease, background .14s ease, transform .08s ease; }
+.view-switch button:hover { border-color: var(--control-border); color: var(--text); background: var(--control-bg); }
+.view-switch button:focus-visible { outline: 2px solid var(--control-border-selected); outline-offset: 2px; }
+.view-switch button:active { transform: translateY(1px); }
+.view-switch button.active { border-color: var(--control-border-selected); color: var(--text); background: var(--control-bg-selected); box-shadow: inset 0 0 0 1px rgba(155, 236, 250, .16); }
+.cheat-sheet-heading { display: grid; gap: 5px; min-width: 0; }
+.cheat-sheet-heading h2 { margin: 0; color: var(--text); font-size: 15px; line-height: 1.35; }
+.cheat-sheet-heading p { margin: 0; color: var(--text-helper); font-size: 11px; line-height: 1.5; }
 .rule-copy strong.rule-keyword { color: #ff4f58; font-weight: 900; }
-.rule-grid { display: grid; grid-template-columns: 1fr 1fr; margin: 10px 10px 0; overflow: hidden; border: 1px solid #344d5e; border-radius: 10px; background: rgba(8, 17, 24, .58); }
+.rule-grid { display: grid; grid-template-columns: 1fr 1fr; overflow: hidden; border: 1px solid var(--control-border); border-radius: 10px; background: rgba(8, 17, 24, .58); }
 .rule-column { min-width: 0; padding: 10px 8px 8px; }
 .rule-column + .rule-column { border-left: 1px solid #48606c; }
 .rule-copy { display: flex; align-items: center; justify-content: center; gap: 7px; min-height: 42px; }
@@ -209,9 +200,10 @@ const playerRules = [
 .cue-arrow.right { stroke: #35a9ff; }
 .safe-mark { fill: none; stroke: #ff4b55; stroke-width: 4; }
 .facing-mark { fill: none; stroke: #f4f8fa; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
-.viewpoint-note { margin: 8px 11px 10px; color: var(--text-helper); font-size: 11px; line-height: 1.5; }
+.viewpoint-note { margin: 0 1px; color: var(--text-helper); font-size: 11px; line-height: 1.5; }
 
 @media (max-width: 390px) {
+  .view-switch button { padding-inline: 5px; font-size: 11px; }
   .rule-grid { grid-template-columns: 1fr; }
   .rule-column + .rule-column { border-top: 1px solid #48606c; border-left: 0; }
   .rule-diagram { max-height: 76px; }

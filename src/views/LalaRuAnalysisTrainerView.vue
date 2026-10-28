@@ -16,8 +16,8 @@ const debuffLabels: Readonly<Record<AnalysisDebuff, string>> = {
   front: '正面未解析', back: '背面未解析', left: '左側未解析', right: '右側未解析'
 };
 const stageBadge = computed(() => trainer.phase.value === 'idle' ? '準備階段' : trainer.phase.value === 'resolved' ? '結算階段' : '作答階段');
-const stageClock = computed(() => trainer.phase.value === 'active' ? `${ANALYSIS_TIMING.resolveMs / 1000}s` : trainer.phase.value === 'resolved' ? '✓ COMPLETE' : 'Ⅱ WAITING');
-const stageTitle = computed(() => trainer.phase.value === 'active' ? '分析判定中' : trainer.phase.value === 'resolved' ? (trainer.result.value ? '缺口接到攻擊' : '方向不符') : '準備中');
+const stageClock = computed(() => trainer.phase.value === 'active' ? `${ANALYSIS_TIMING.resolveMs / 1000}s` : trainer.phase.value === 'resolved' ? '✓ COMPLETE' : '待開始');
+const stageTitle = computed(() => trainer.phase.value === 'active' ? '分析判定中' : trainer.phase.value === 'resolved' ? (trainer.result.value ? '缺口接到攻擊' : '方向不符') : '準備就緒');
 const stageDescription = computed(() => trainer.phase.value === 'active'
   ? '在倒數結束前調整角色位置與面向。'
   : trainer.phase.value === 'resolved'
@@ -85,7 +85,7 @@ onBeforeUnmount(() => document.removeEventListener('contextmenu', preventContext
         wins-label="成功"
         :show-streak="false"
       />
-      <TrainerStageCard :badge="stageBadge" :clock="stageClock" :title="stageTitle" :status="stageDescription">
+      <TrainerStageCard :badge="stageBadge" :clock="stageClock" :clock-tone="trainer.phase.value === 'idle' ? 'muted' : 'default'" :title="stageTitle" :status="stageDescription">
         <dl class="trainer-info-grid three-column">
           <div><dt>世界面向</dt><dd>{{ Math.round(trainer.playerFacingAngle.value) }}°</dd></div>
           <div><dt>缺口中心</dt><dd>{{ Math.round(trainer.gapCenterAngle.value) }}°</dd></div>

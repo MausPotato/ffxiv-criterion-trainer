@@ -199,15 +199,18 @@ test('migrated LalaRu headings omit development status chips', async () => {
   }
 });
 
-test('all four visible LalaRu mechanics configure the shared cheat sheet', async () => {
+test('visible LalaRu mechanics configure the appropriate quick references', async () => {
   const expectedViews = new Map([
     ['LalaRuTrainerView.vue', 'boss'],
     ['LalaRuCompositeTrainerView.vue', 'player'],
-    ['LalaRuPlanarMinesTrainerView.vue', 'player'],
-    ['LalaRuSpatialBombsTrainerView.vue', 'boss']
+    ['LalaRuPlanarMinesTrainerView.vue', 'player']
   ]);
   for (const [file, view] of expectedViews) {
     const source = await readFile(new URL(file, viewsDirectory), 'utf8');
     assert.match(source, new RegExp(`<LalaRuCheatSheet[^>]*default-view="${view}"`));
   }
+
+  const spatial = await readFile(new URL('LalaRuSpatialBombsTrainerView.vue', viewsDirectory), 'utf8');
+  assert.match(spatial, /<LalaRuSpatialBombsCheatSheet default-open \/>/);
+  assert.match(spatial, /<LalaRuCheatSheet default-view="boss" :available-views="\['boss'\]" \/>/);
 });

@@ -26,14 +26,14 @@ const stageProgress = computed(() => {
 });
 const stageBadge = computed(() => trainer.phase.value === 'idle' || trainer.phase.value === 'preparing' ? '準備階段' : '結算階段');
 const stageClock = computed(() => {
-  if (trainer.phase.value === 'idle') return 'Ⅱ WAITING';
+  if (trainer.phase.value === 'idle') return '待開始';
   if (trainer.phase.value === 'preparing') return `${trainer.remainingSeconds.value}`;
   if (trainer.phase.value === 'resolved') return '✓ COMPLETE';
   if (trainer.phase.value === 'dead') return '× FAILED';
   return '▶ RESOLVING';
 });
 const stageTitle = computed(() => ({
-  idle: '準備中',
+  idle: '準備就緒',
   preparing: '作答中',
   'forced-movement': '強制移動',
   'stack-resolving': '雙數爆擊',
@@ -174,6 +174,7 @@ onBeforeUnmount(() => document.removeEventListener('contextmenu', preventContext
       <TrainerStageCard
         :badge="stageBadge"
         :clock="stageClock"
+        :clock-tone="trainer.phase.value === 'idle' ? 'muted' : 'default'"
         :title="stageTitle"
         :status="stageDescription"
         :progress="stageProgress"

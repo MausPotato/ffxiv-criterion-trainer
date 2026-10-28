@@ -49,7 +49,7 @@ const resolvedSummary = computed(() => {
   return reasons.join('＋') || '失敗';
 });
 const stageBadge = computed(() => trainer.phase.value === 'idle' ? '準備階段' : trainer.phase.value === 'resolved' || trainer.phase.value === 'dead' ? '結算階段' : '進行階段');
-const stageClock = computed(() => trainer.paused.value ? 'Ⅱ PAUSED' : trainer.phase.value === 'idle' ? 'Ⅱ WAITING' : trainer.phase.value === 'resolved' ? '✓ COMPLETE' : trainer.phase.value === 'dead' ? '× FAILED' : '▶ LIVE');
+const stageClock = computed(() => trainer.paused.value ? 'Ⅱ PAUSED' : trainer.phase.value === 'idle' ? '待開始' : trainer.phase.value === 'resolved' ? '✓ COMPLETE' : trainer.phase.value === 'dead' ? '× FAILED' : '▶ LIVE');
 const stageTitle = computed(() => {
   if (trainer.paused.value) return '已暫停';
   if (trainer.phase.value === 'analysis-lead') return '分析賦予・T0 前';
@@ -59,7 +59,7 @@ const stageTitle = computed(() => {
   if (trainer.phase.value === 'high-precision') return '高精度光彈準備';
   if (trainer.phase.value === 'dead') return '機制失敗';
   if (trainer.phase.value === 'resolved') return resolvedSummary.value;
-  return '準備中';
+  return '準備就緒';
 });
 const stageDescription = computed(() => trainer.phase.value === 'idle'
   ? '開始後依序處理步進地板、光球分析與魔紋砲。'
@@ -168,7 +168,7 @@ onBeforeUnmount(() => document.removeEventListener('contextmenu', preventContext
             wins-label="成功"
             :show-streak="false"
       />
-      <TrainerStageCard :badge="stageBadge" :clock="stageClock" :title="stageTitle" :status="stageDescription">
+      <TrainerStageCard :badge="stageBadge" :clock="stageClock" :clock-tone="trainer.phase.value === 'idle' ? 'muted' : 'default'" :title="stageTitle" :status="stageDescription">
             <div
               v-if="trainer.phase.value === 'preview' && !trainer.paused.value"
               class="stage-progress is-timed"

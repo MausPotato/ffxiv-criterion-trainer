@@ -42,10 +42,11 @@ const dungeons: readonly DungeonCard[] = [
   <main class="home-page page-wrap">
     <section class="hero">
       <p class="eyebrow">VARIANT DUNGEON · MECHANIC LAB</p>
-      <h1>把機制拆成一步一步，<br><span>練到判斷成為直覺。</span></h1>
-      <p class="hero-copy">
-        FF14 異聞迷宮單人演練工具。選擇迷宮與機制，在不影響隊友的情況下反覆熟悉站位。
-      </p>
+      <h1>
+        <span class="hero-title-lead">FF14 異聞迷宮單人演練工具</span>
+        <span class="hero-title-accent">在不影響隊友的情況下反覆熟悉站位</span>
+      </h1>
+      <p class="hero-copy">今天也要愉快的讀書ᕕ ( ᐛ ) ᕗ</p>
     </section>
 
     <section class="dungeon-section" aria-labelledby="dungeon-heading">
@@ -112,7 +113,7 @@ const dungeons: readonly DungeonCard[] = [
 }
 
 .dungeon-card.has-secondary-action {
-  min-height: 340px;
+  min-height: 320px;
 }
 
 .dungeon-card.has-secondary-action .dungeon-emblem {

@@ -30,6 +30,7 @@ test('spatial arena keeps shared movement and camera controls active during the 
   assert.match(arena, /white-orb-impact/);
   assert.match(arena, /\(\) => resetCamera\(\)/);
   assert.doesNotMatch(arena, /resetCamera\(-props\.pattern\.rotation \* 90\)/);
+  assert.match(arena, /\.spatial-camera-viewport\.rotating-camera \.spatial-arena \{ transition: none; \}/);
 });
 
 test('spatial question starts masked with the shared N/E arena directions', async () => {
@@ -67,6 +68,8 @@ test('spatial arena reuses composite markers, renders cube bombs, and keeps plan
   assert.match(arena, /cube-top/);
   assert.match(arena, /cube-left/);
   assert.match(arena, /cube-right/);
+  assert.match(arena, /<polygon class="cube-face cube-top"/);
+  assert.doesNotMatch(arena, /\.bomb-cube::before/);
   assert.doesNotMatch(arena, /bomb-core/);
   assert.match(arena, /\.spatial-actor\.npc \{ border-color: #95d7ae; background: #24533d; transition: left var\(--npc-move-duration\)/);
   assert.doesNotMatch(arena, /\.spatial-actor \{[^}]*transition:/);
@@ -79,12 +82,51 @@ test('spatial arena reuses composite markers, renders cube bombs, and keeps plan
   assert.match(arena, /'npc-c': 'C'/);
 });
 
+test('spatial cannon renders the saved boss multiplier above actors through countdown and impact', async () => {
+  const arena = await readFile(new URL('../../src/components/lalaru/LalaRuSpatialBombsArena.vue', import.meta.url), 'utf8');
+  const view = await readFile(new URL('../../src/views/LalaRuSpatialBombsTrainerView.vue', import.meta.url), 'utf8');
+  assert.match(arena, /const showCannon = computed\(\(\) => props\.phase === 'cannon-countdown' \|\| props\.phase === 'cannon-impact'\)/);
+  assert.match(arena, /<div v-if="showCannon" class="boss-cannon-cues">/);
+  assert.match(arena, /:name="cannonQuestion\.multiplier === 'III' \? 'multiplyIII' : 'multiplyV'"/);
+  assert.match(arena, /:arrow-side="cannonQuestion\.arrowSide"/);
+  assert.match(arena, /\.boss-cannon-cues \{[^}]*z-index: 19;/);
+  assert.match(view, /:cannon-question="trainer\.question\.value\.cannon"/);
+  assert.match(view, /:cannon-safe-direction="trainer\.cannonSolution\.value\.finalSafeDirection"/);
+});
+
+test('spatial quick reference follows the live fixture and keeps multiplication secondary', async () => {
+  const sheet = await readFile(new URL('../../src/components/lalaru/LalaRuSpatialBombsCheatSheet.vue', import.meta.url), 'utf8');
+  const view = await readFile(new URL('../../src/views/LalaRuSpatialBombsTrainerView.vue', import.meta.url), 'utf8');
+  assert.match(sheet, /title="立體炸彈站位小抄"/);
+  assert.match(sheet, /spatialStandardPosition\(layer, 0\)/);
+  assert.match(sheet, /rotateSpatialPoint\(\{ x: 2\.5, y: 1\.5 \}, 0\)/);
+  assert.match(sheet, /rotateSpatialPoint\(\{ x: 2\.5, y: 4\.5 \}, 0\)/);
+  assert.match(sheet, /1、2：王腳下/);
+  assert.match(sheet, /3、4：向後（題型後方）/);
+  assert.match(sheet, /步進 3 上方炸彈結算後移往題型上方/);
+  assert.match(sheet, /步進 6 後剩 1 層，移往題型下方/);
+  assert.match(sheet, /2、3[\s\S]*?掛機（原位處理），不需額外移動/);
+  assert.match(sheet, /圖示固定以題型上／下直向呈現/);
+  assert.match(sheet, /不受鏡頭或角色面向影響/);
+  assert.match(sheet, /\.spatial-reference-layout \{ display: grid; grid-template-columns: minmax\(112px, \.82fr\) minmax\(0, 1\.18fr\);/);
+  assert.match(sheet, /\.position-diagram \{[^}]*max-width: 150px;/);
+  assert.match(view, /<LalaRuSpatialBombsCheatSheet[^>]*default-open/);
+  assert.match(view, /<LalaRuCheatSheet default-view="boss" :available-views="\['boss'\]"/);
+});
+
 test('spatial result is withheld until after the cannon phase', async () => {
   const composable = await readFile(new URL('../../src/composables/useLalaRuSpatialBombsTrainer.ts', import.meta.url), 'utf8');
   assert.match(composable, /schedule\(beginCannon, SPATIAL_BOMBS_TIMING\.cannonAfterFinalBombDelayMs\)/);
   assert.match(composable, /phase\.value = 'cannon-countdown'/);
   assert.match(composable, /phase\.value = 'resolved'/);
   assert.match(composable, /isPointInSafeSector\(playerPosition\.value/);
+});
+
+test('spatial death dialog shows only the readable death reason', async () => {
+  const view = await readFile(new URL('../../src/views/LalaRuSpatialBombsTrainerView.vue', import.meta.url), 'utf8');
+  const deathReason = view.match(/const deathReason = computed\(\(\) => \{[\s\S]*?\n\}\);/)?.[0] ?? '';
+  assert.match(deathReason, /return `死因：\$\{death\.reason\}`/);
+  assert.doesNotMatch(deathReason, /remainingLayers|position|elapsedMs|toFixed|Math\.round/);
 });
 
 test('spatial beta layers use the dedicated cube icons for all four values', async () => {

@@ -21,8 +21,8 @@ const modeOptions = [
 ] as const;
 
 const stageBadge = computed(() => trainer.phase.value === 'resolved' ? '結算階段' : trainer.phase.value === 'casting' ? '作答階段' : '準備階段');
-const stageClock = computed(() => trainer.phase.value === 'casting' ? '▶ CASTING' : trainer.phase.value === 'resolved' ? '✓ COMPLETE' : 'Ⅱ WAITING');
-const stageTitle = computed(() => trainer.phase.value === 'casting' ? '判定倒數中' : trainer.phase.value === 'resolved' ? (trainer.succeeded.value ? '走位成功' : '受到攻擊') : '準備中');
+const stageClock = computed(() => trainer.phase.value === 'casting' ? '▶ CASTING' : trainer.phase.value === 'resolved' ? '✓ COMPLETE' : '待開始');
+const stageTitle = computed(() => trainer.phase.value === 'casting' ? '判定倒數中' : trainer.phase.value === 'resolved' ? (trainer.succeeded.value ? '走位成功' : '受到攻擊') : '準備就緒');
 const stageDescription = computed(() => trainer.phase.value === 'casting'
   ? '拖曳 YOU 移動。技能只會在最後一次結算。'
   : trainer.phase.value === 'resolved'
@@ -88,7 +88,7 @@ onBeforeUnmount(() => document.removeEventListener('contextmenu', preventContext
     </template>
 
     <template #context>
-      <LalaRuCheatSheet default-view="boss" />
+      <LalaRuCheatSheet default-view="boss" :available-views="['boss']" />
     </template>
 
     <template #status>
@@ -102,6 +102,7 @@ onBeforeUnmount(() => document.removeEventListener('contextmenu', preventContext
       <TrainerStageCard
         :badge="stageBadge"
         :clock="stageClock"
+        :clock-tone="trainer.phase.value === 'idle' ? 'muted' : 'default'"
         :title="stageTitle"
         :status="stageDescription"
       >

@@ -5,11 +5,12 @@ import { trainerNavigationGroupForPath } from './navigation/trainer-navigation.t
 
 const route = useRoute();
 const activeTrainerGroup = computed(() => trainerNavigationGroupForPath(route.path));
+const isHome = computed(() => route.path === '/');
 </script>
 
 <template>
   <div class="app-shell">
-    <header class="site-header">
+    <header class="site-header" :class="{ 'home-header': isHome }">
       <RouterLink class="brand" to="/" aria-label="回到首頁">
         <span class="brand-gem" aria-hidden="true">◆</span>
         <span>
@@ -20,10 +21,12 @@ const activeTrainerGroup = computed(() => trainerNavigationGroupForPath(route.pa
       <nav aria-label="主要導覽">
         <RouterLink to="/">迷宮一覽</RouterLink>
         <RouterLink
+          v-if="!isHome"
           to="/aloalo-island/ketuduke"
           :class="{ 'router-link-active': activeTrainerGroup === 'ketuduke' }"
         >凱圖嘟凱</RouterLink>
         <RouterLink
+          v-if="!isHome"
           to="/aloalo-island/lalaru/rotation"
           :class="{ 'router-link-active': activeTrainerGroup === 'lalaru' }"
         >拉拉魯</RouterLink>
