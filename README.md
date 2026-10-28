@@ -6,9 +6,7 @@ FF14 異聞迷宮單人機制演練工具。選擇迷宮與機制，在不影響
 
 ## 線上體驗
 
-預定公開入口：<https://mauspotato.github.io/ffxiv-criterion-trainer/>
-
-目前正在設定 GitHub Pages；部署確認成功後，此處將作為正式線上入口。
+[開啟異聞演練所](https://mauspotato.github.io/ffxiv-criterion-trainer/)
 
 ## 目前開放的練習內容
 
