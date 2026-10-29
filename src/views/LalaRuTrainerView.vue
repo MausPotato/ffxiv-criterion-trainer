@@ -12,6 +12,7 @@ import { useLalaRuTrainer } from '../composables/useLalaRuTrainer.ts';
 import { LALARU_TIMING } from '../mechanics/lalaru/timing.ts';
 import type { ArrowSide, CardinalDirection, SelectedSide } from '../mechanics/lalaru/types.ts';
 import { trainerNavigationFor } from '../navigation/trainer-navigation.ts';
+import { trainerResultStatus } from '../presentation/trainer-result.ts';
 
 const trainer = useLalaRuTrainer();
 const lalaruNavigation = trainerNavigationFor('lalaru');
@@ -21,7 +22,7 @@ const modeOptions = [
 ] as const;
 
 const stageBadge = computed(() => trainer.phase.value === 'resolved' ? '結算階段' : trainer.phase.value === 'casting' ? '作答階段' : '準備階段');
-const stageClock = computed(() => trainer.phase.value === 'casting' ? '▶ CASTING' : trainer.phase.value === 'resolved' ? '✓ COMPLETE' : '待開始');
+const stageClock = computed(() => trainer.phase.value === 'casting' ? '▶ CASTING' : trainer.phase.value === 'resolved' ? trainerResultStatus(trainer.succeeded.value === true) : '待開始');
 const stageTitle = computed(() => trainer.phase.value === 'casting' ? '判定倒數中' : trainer.phase.value === 'resolved' ? (trainer.succeeded.value ? '走位成功' : '受到攻擊') : '準備就緒');
 const stageDescription = computed(() => trainer.phase.value === 'casting'
   ? '拖曳 YOU 移動。技能只會在最後一次結算。'

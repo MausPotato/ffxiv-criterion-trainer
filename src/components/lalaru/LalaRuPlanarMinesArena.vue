@@ -15,6 +15,7 @@ import {
 } from '../../mechanics/lalaru/index.ts';
 import TrainerCameraControls from '../trainer/TrainerCameraControls.vue';
 import TrainerStartOverlay from '../trainer/TrainerStartOverlay.vue';
+import { trainerResultLabel } from '../../presentation/trainer-result.ts';
 
 const props = defineProps<{
   mineCells: readonly PlanarMineCell[];
@@ -203,8 +204,8 @@ function mineKey(cell: PlanarMineCell): string {
         description="開始後取得 Debuff，在倒數內完成站位與面向調整。"
         @start="emit('start')"
       />
-      <div v-else-if="phase === 'resolved'" class="planar-result success">成功</div>
-      <div v-else-if="phase === 'dead'" class="planar-result failure">失敗</div>
+      <div v-else-if="phase === 'resolved'" class="planar-result success">{{ trainerResultLabel(true) }}</div>
+      <div v-else-if="phase === 'dead'" class="planar-result failure">{{ trainerResultLabel(false) }}</div>
     </div>
 
     <TrainerCameraControls

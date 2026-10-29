@@ -13,6 +13,7 @@ import { useLalaRuPlanarMinesTrainer } from '../composables/useLalaRuPlanarMines
 import { MECHANIC_ICONS } from '../assets/mechanic-icons.ts';
 import { PLANAR_TIMELINE, type PlanarPartyId } from '../mechanics/lalaru/index.ts';
 import { trainerNavigationFor } from '../navigation/trainer-navigation.ts';
+import { trainerResultStatus } from '../presentation/trainer-result.ts';
 
 const trainer = useLalaRuPlanarMinesTrainer();
 const lalaruNavigation = trainerNavigationFor('lalaru');
@@ -28,8 +29,8 @@ const stageBadge = computed(() => trainer.phase.value === 'idle' || trainer.phas
 const stageClock = computed(() => {
   if (trainer.phase.value === 'idle') return '待開始';
   if (trainer.phase.value === 'preparing') return `${trainer.remainingSeconds.value}`;
-  if (trainer.phase.value === 'resolved') return '✓ COMPLETE';
-  if (trainer.phase.value === 'dead') return '× FAILED';
+  if (trainer.phase.value === 'resolved') return trainerResultStatus(true);
+  if (trainer.phase.value === 'dead') return trainerResultStatus(false);
   return '▶ RESOLVING';
 });
 const stageTitle = computed(() => ({

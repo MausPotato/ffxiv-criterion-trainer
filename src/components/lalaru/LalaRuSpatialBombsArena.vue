@@ -22,6 +22,7 @@ import TrainerCameraControls from '../trainer/TrainerCameraControls.vue';
 import MechanicIcon from '../trainer/MechanicIcon.vue';
 import { MECHANIC_ICONS } from '../../assets/mechanic-icons.ts';
 import TrainerStartOverlay from '../trainer/TrainerStartOverlay.vue';
+import { trainerResultLabel } from '../../presentation/trainer-result.ts';
 import { LALARU_BOSS_DIAMETER } from '../../presentation/lalaru/actor-visuals.ts';
 
 const props = defineProps<{
@@ -290,8 +291,8 @@ function crossStyle(cell: GridCell): Record<string, string> {
 
         <div v-if="phase === 'cannon-countdown'" class="cannon-countdown">{{ cannonSeconds }}</div>
         <div v-if="phase === 'cannon-impact'" :key="cannonImpactKey" class="cannon-impact"></div>
-        <div v-if="phase === 'resolved'" class="arena-result success">CLEAR</div>
-        <div v-if="phase === 'dead'" class="arena-result failure">FAILED</div>
+        <div v-if="phase === 'resolved'" class="arena-result success">{{ trainerResultLabel(true) }}</div>
+        <div v-if="phase === 'dead'" class="arena-result failure">{{ trainerResultLabel(false) }}</div>
       </div>
       <TrainerStartOverlay
         v-if="phase === 'idle'"

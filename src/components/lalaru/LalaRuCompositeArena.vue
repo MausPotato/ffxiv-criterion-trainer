@@ -37,6 +37,7 @@ import TrainerCameraControls from '../trainer/TrainerCameraControls.vue';
 import PlayerFacingIndicator from './PlayerFacingIndicator.vue';
 import RotationCueIcon from './RotationCueIcon.vue';
 import TrainerStartOverlay from '../trainer/TrainerStartOverlay.vue';
+import { trainerResultLabel } from '../../presentation/trainer-result.ts';
 import { LALARU_BOSS_DIAMETER } from '../../presentation/lalaru/actor-visuals.ts';
 
 const props = defineProps<{
@@ -344,9 +345,9 @@ function orbStyle(orb: CompositeOrb): Record<string, string> {
 
       <div v-if="paused" class="pause-badge">PAUSED</div>
       <div v-if="phase === 'resolved'" class="arena-result" :class="succeeded ? 'success' : 'failure'">
-        {{ succeeded ? 'SAFE' : 'BLEEDING' }}
+        {{ trainerResultLabel(succeeded === true) }}
       </div>
-      <div v-if="phase === 'dead' && deathRecord" class="arena-result failure">KO</div>
+      <div v-if="phase === 'dead' && deathRecord" class="arena-result failure">{{ trainerResultLabel(false) }}</div>
     </div>
 
     <TrainerCameraControls

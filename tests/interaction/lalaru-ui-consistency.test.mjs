@@ -75,3 +75,29 @@ test('all LalaRu stage cards share the waiting copy and muted clock presentation
     assert.doesNotMatch(source, /Ⅱ WAITING|return 'WAITING'/);
   }
 });
+
+test('all four mechanics share localized final result labels', async () => {
+  const resultLabels = await readFile(
+    new URL('../../src/presentation/trainer-result.ts', import.meta.url),
+    'utf8'
+  );
+  assert.match(resultLabels, /succeeded \? '成功' : '失敗'/);
+  assert.match(resultLabels, /succeeded \? '✓ 成功' : '× 失敗'/);
+
+  for (const [file] of arenas) {
+    const source = await readFile(new URL(file, componentDirectory), 'utf8');
+    assert.match(source, /trainerResultLabel/);
+    assert.doesNotMatch(source, />\s*(?:SAFE|HIT|BLEEDING|KO|CLEAR|FAILED)\s*</);
+  }
+
+  for (const file of [
+    'LalaRuTrainerView.vue',
+    'LalaRuCompositeTrainerView.vue',
+    'LalaRuPlanarMinesTrainerView.vue',
+    'LalaRuSpatialBombsTrainerView.vue'
+  ]) {
+    const source = await readFile(new URL(file, viewDirectory), 'utf8');
+    assert.match(source, /trainerResultStatus/);
+    assert.doesNotMatch(source, /['"](?:✓ COMPLETE|× FAILED|COMPLETE|FAILED)['"]/);
+  }
+});

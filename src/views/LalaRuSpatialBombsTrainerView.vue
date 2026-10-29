@@ -13,6 +13,7 @@ import { useLalaRuSpatialBombsTrainer } from '../composables/useLalaRuSpatialBom
 import { SPATIAL_BOMBS_TIMING, type SpatialPartyId } from '../mechanics/lalaru/index.ts';
 import { MECHANIC_ICONS } from '../assets/mechanic-icons.ts';
 import { trainerNavigationFor } from '../navigation/trainer-navigation.ts';
+import { trainerResultStatus } from '../presentation/trainer-result.ts';
 
 const trainer = useLalaRuSpatialBombsTrainer();
 const lalaruNavigation = trainerNavigationFor('lalaru');
@@ -33,8 +34,8 @@ const stageClock = computed(() => {
   if (trainer.phase.value === 'lead-in') return 'HIDDEN';
   if (trainer.phase.value === 'preview') return 'READY';
   if (trainer.phase.value === 'cannon-countdown') return `${trainer.cannonSeconds.value}s`;
-  if (trainer.phase.value === 'resolved') return 'COMPLETE';
-  if (trainer.phase.value === 'dead') return 'FAILED';
+  if (trainer.phase.value === 'resolved') return trainerResultStatus(true);
+  if (trainer.phase.value === 'dead') return trainerResultStatus(false);
   return `STEP ${trainer.currentStep.value}`;
 });
 const stageTitle = computed(() => ({

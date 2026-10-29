@@ -19,6 +19,7 @@ import RotationCueIcon from './RotationCueIcon.vue';
 import MechanicIcon from '../trainer/MechanicIcon.vue';
 import TrainerCameraControls from '../trainer/TrainerCameraControls.vue';
 import TrainerStartOverlay from '../trainer/TrainerStartOverlay.vue';
+import { trainerResultLabel } from '../../presentation/trainer-result.ts';
 import PlayerFacingIndicator from './PlayerFacingIndicator.vue';
 import { LALARU_BOSS_DIAMETER } from '../../presentation/lalaru/actor-visuals.ts';
 
@@ -180,7 +181,7 @@ function actorStyle(point: ArenaPoint, diameter: number): Record<string, string>
       />
 
       <div v-if="phase === 'resolved'" class="arena-result" :class="succeeded ? 'success' : 'failure'">
-        {{ succeeded ? 'SAFE' : 'HIT' }}
+        {{ trainerResultLabel(succeeded === true) }}
       </div>
     </div>
 

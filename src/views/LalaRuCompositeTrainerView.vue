@@ -17,6 +17,7 @@ import {
 } from '../mechanics/lalaru/index.ts';
 import { MECHANIC_ICONS, type MechanicIconName } from '../assets/mechanic-icons.ts';
 import { trainerNavigationFor } from '../navigation/trainer-navigation.ts';
+import { trainerResultStatus } from '../presentation/trainer-result.ts';
 
 const trainer = useLalaRuCompositeTrainer();
 const lalaruNavigation = trainerNavigationFor('lalaru');
@@ -49,7 +50,7 @@ const resolvedSummary = computed(() => {
   return reasons.join('＋') || '失敗';
 });
 const stageBadge = computed(() => trainer.phase.value === 'idle' ? '準備階段' : trainer.phase.value === 'resolved' || trainer.phase.value === 'dead' ? '結算階段' : '進行階段');
-const stageClock = computed(() => trainer.paused.value ? 'Ⅱ PAUSED' : trainer.phase.value === 'idle' ? '待開始' : trainer.phase.value === 'resolved' ? '✓ COMPLETE' : trainer.phase.value === 'dead' ? '× FAILED' : '▶ LIVE');
+const stageClock = computed(() => trainer.paused.value ? 'Ⅱ PAUSED' : trainer.phase.value === 'idle' ? '待開始' : trainer.phase.value === 'resolved' ? trainerResultStatus(trainer.succeeded.value === true) : trainer.phase.value === 'dead' ? trainerResultStatus(false) : '▶ LIVE');
 const stageTitle = computed(() => {
   if (trainer.paused.value) return '已暫停';
   if (trainer.phase.value === 'analysis-lead') return '分析賦予・T0 前';
