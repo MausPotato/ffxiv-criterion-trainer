@@ -69,7 +69,7 @@ test('desktop LalaRu layout is viewport-bound without a page Y scrollbar', async
   assert.match(base, /@media \(max-width: 760px\)[\s\S]*?\.trainer-page \{[^}]*height: auto;[^}]*overflow: visible;/);
 });
 
-test('cheat sheet separates boss safety and player pre-facing viewpoints', async () => {
+test('cheat sheet separates boss safety and player pre-rotation gap viewpoints', async () => {
   const source = await readFile(
     new URL('../../src/components/lalaru/LalaRuCheatSheet.vue', import.meta.url),
     'utf8'
@@ -77,13 +77,14 @@ test('cheat sheet separates boss safety and player pre-facing viewpoints', async
   assert.match(source, /defaultView: 'boss'/);
   assert.match(source, /availableViews: \(\) => \['boss', 'player'\]/);
   assert.match(source, /王的乘算安全區｜三沒五有/);
-  assert.match(source, /玩家預先面向｜三有五沒/);
+  assert.match(source, /旋轉前缺口｜三沒五有/);
   assert.match(source, />王的安全區<\/button>/);
-  assert.match(source, />玩家預先面向<\/button>/);
+  assert.match(source, />玩家旋轉前缺口<\/button>/);
   assert.match(source, /v-if="showViewSwitch" class="view-switch"/);
   assert.match(source, /看<strong class="rule-keyword">\{\{ rule\.keyword \}\}<\/strong>箭頭那邊/);
-  assert.match(source, /旋轉前面向<strong class="rule-keyword">\{\{ rule\.keyword \}\}<\/strong>箭頭側/);
-  assert.match(source, /白箭頭標示旋轉前的角色面向；乘算仍使用同一套旋轉規則。/);
+  assert.match(source, /旋轉前缺口放在<strong class="rule-keyword">\{\{ rule\.keyword \}\}<\/strong>箭頭側/);
+  assert.match(source, /分析機制需再依 Debuff 換算角色面向/);
+  assert.match(source, /平面爆雷則反推旋轉前前進方向/);
   assert.match(source, /\.rule-copy strong\.rule-keyword \{ color: #ff4f58; font-weight: 900; \}/);
 });
 

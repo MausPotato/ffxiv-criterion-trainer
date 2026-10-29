@@ -31,6 +31,26 @@ function question(gap = 'south-west', targets = ['you', 'npc-b']) {
   };
 }
 
+function planarTruthTableQuestion({ gap, layers, targets, arrowSide, multiplier }) {
+  return {
+    gap,
+    party: ids.map((id, index) => ({
+      id,
+      layer: layers[index],
+      multiplier: id === 'you' ? multiplier : 'III',
+      arrowSide: id === 'you' ? arrowSide : 'left',
+      movement: 'forward',
+      movementDurationSeconds: 16,
+      explosionTarget: targets.includes(id),
+      twoSlotOrder: index / 10
+    }))
+  };
+}
+
+function normalizeAngle(angle) {
+  return ((angle + 180) % 360 + 360) % 360 - 180;
+}
+
 function correctActors(value, strategy) {
   return planarAssignedPositions(value, strategy).map(assignment => ({
     id: assignment.member.id,
@@ -197,6 +217,88 @@ test('full animation moves actors over time, updates mines per event, then stack
     + PLANAR_RESOLUTION_TIMING.doubleImpactDurationMs);
   assert.equal(trainer.phase.value, 'resolved');
   assert.equal(trainer.succeeded.value, true);
+});
+
+test('verified rotations produce the intended forced path across slots, gaps, and both strategies', () => {
+  const cases = [
+    {
+      gap: 'south-west', strategy: 'gap-bottom-left', layers: [1, 2, 2, 3],
+      targets: ['you', 'npc-b'], arrowSide: 'left', multiplier: 'III', rotation: -90,
+      expectedSlot: 'one-side'
+    },
+    {
+      gap: 'north-east', strategy: 'gap-bottom-right', layers: [3, 2, 2, 1],
+      targets: ['you', 'npc-b'], arrowSide: 'left', multiplier: 'V', rotation: 90,
+      expectedSlot: 'three-bottom'
+    },
+    {
+      gap: 'north-west', strategy: 'gap-bottom-left', layers: [2, 1, 2, 3],
+      targets: ['you', 'npc-b'], arrowSide: 'right', multiplier: 'III', rotation: 90,
+      expectedSlot: 'two-middle'
+    },
+    {
+      gap: 'south-east', strategy: 'gap-bottom-right', layers: [2, 1, 2, 3],
+      targets: ['npc-b', 'npc-c'], arrowSide: 'right', multiplier: 'V', rotation: -90,
+      expectedSlot: 'two-upper'
+    }
+  ];
+
+  for (const testCase of cases) {
+    const scheduler = new FakeScheduler();
+    const value = planarTruthTableQuestion(testCase);
+    const trainer = useLalaRuPlanarMinesTrainer({
+      scheduler,
+      questionFactory: () => structuredClone(value)
+    });
+    trainer.setShowResolutionAnimation(false);
+    trainer.setStrategy(testCase.strategy);
+    trainer.start();
+
+    const assignment = planarAssignedPositions(value, testCase.strategy)
+      .find(item => item.member.id === 'you');
+    const finalFacing = planarExpectedFinalFacing(assignment, value, testCase.strategy);
+    const preFacing = normalizeAngle(finalFacing - testCase.rotation);
+    assert.equal(assignment.slot, testCase.expectedSlot);
+    assert.equal(
+      analysisRotationOffsetDegrees(testCase.arrowSide, testCase.multiplier),
+      testCase.rotation
+    );
+
+    trainer.setPlayerPosition(assignment.worldPosition);
+    trainer.setPlayerFacingAngle(preFacing);
+    scheduler.advanceTo(16_000);
+
+    assert.equal(trainer.playerFacingAngle.value, finalFacing);
+    assert.equal(trainer.resolutionResult.value.paths.find(path => path.id === 'you').facingAngle, finalFacing);
+    assert.equal(trainer.resolutionResult.value.success, true);
+    assert.equal(trainer.phase.value, 'resolved');
+  }
+});
+
+test('planar movement rejects the facing opposite the verified pre-rotation answer', () => {
+  const testCase = {
+    gap: 'north-west', strategy: 'gap-bottom-left', layers: [2, 1, 2, 3],
+    targets: ['you', 'npc-b'], arrowSide: 'right', multiplier: 'III', rotation: 90
+  };
+  const scheduler = new FakeScheduler();
+  const value = planarTruthTableQuestion(testCase);
+  const trainer = useLalaRuPlanarMinesTrainer({
+    scheduler,
+    questionFactory: () => structuredClone(value)
+  });
+  trainer.setShowResolutionAnimation(false);
+  trainer.start();
+  const assignment = planarAssignedPositions(value, testCase.strategy)
+    .find(item => item.member.id === 'you');
+  const finalFacing = planarExpectedFinalFacing(assignment, value, testCase.strategy);
+  trainer.setPlayerPosition(assignment.worldPosition);
+  trainer.setPlayerFacingAngle(finalFacing - testCase.rotation + 180);
+
+  scheduler.advanceTo(16_000);
+
+  assert.equal(trainer.resolutionResult.value.success, false);
+  assert.equal(trainer.resolutionResult.value.failureCode, 'wrong-direction');
+  assert.equal(trainer.phase.value, 'dead');
 });
 
 test('skipping animation and playing it use the identical mechanic result', () => {

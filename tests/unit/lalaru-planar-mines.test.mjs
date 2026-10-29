@@ -247,7 +247,7 @@ test('planar preparation reveals debuffs, mines, player cue, and five-dot countd
   scheduler.advanceTo(16_000);
   assert.equal(trainer.remainingSeconds.value, 0);
   assert.equal(trainer.phase.value, 'forced-movement');
-  assert.equal(trainer.playerFacingAngle.value, 110, 'III reverses the left cue into a +90 degree result');
+  assert.equal(trainer.playerFacingAngle.value, -70, 'left + III applies the verified -90 degree result');
   assert.deepEqual(trainer.playerPosition.value, { x: 1, y: 4 }, 'forced movement remains intentionally unimplemented');
 });
 

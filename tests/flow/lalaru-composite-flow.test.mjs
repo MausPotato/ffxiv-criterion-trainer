@@ -38,21 +38,21 @@ class FakeScheduler {
   }
 }
 
-function createTrainer() {
+function createTrainer(overrides = {}) {
   const scheduler = new FakeScheduler();
   const trainer = useLalaRuCompositeTrainer({
     scheduler,
     initialOrientation: 'north-south',
     initialOrbOrder: 'upper-first',
     initialRouteVariant: 'primary',
-    initialAnalysisDebuff: 'front',
+    initialAnalysisDebuff: overrides.initialAnalysisDebuff ?? 'front',
     initialBossQuestion: {
       initialSafeDirection: 'south',
       arrowSide: 'left',
       multiplier: 'III',
       dotPattern: 5
     },
-    initialPlayerRotationCue: {
+    initialPlayerRotationCue: overrides.initialPlayerRotationCue ?? {
       arrowSide: 'left',
       multiplier: 'III',
       dotPattern: 5
@@ -357,7 +357,7 @@ test('pausing during the first orb explosion also freezes the delayed cannon app
 test('player multiplication rotates only the C gap, then high precision resolves from the boss', () => {
   const { scheduler, trainer } = createTrainer();
   advanceThroughSecondOrb(scheduler, trainer);
-  const originalFacing = -180;
+  const originalFacing = 0;
   trainer.setPlayerFacingAngle(originalFacing);
   const secondOrbTime = SECOND_ORB_TIME;
   scheduler.advanceTo(secondOrbTime);
@@ -368,7 +368,7 @@ test('player multiplication rotates only the C gap, then high precision resolves
 
   scheduler.advanceTo(secondOrbTime + COMPOSITE_TIMING.playerRotationResolveMs);
   assert.equal(trainer.playerRotationState.value, 'applied');
-  assert.equal(trainer.playerGapRotationDegrees.value, 90);
+  assert.equal(trainer.playerGapRotationDegrees.value, -90);
   assert.equal(trainer.playerFacingAngle.value, originalFacing);
   assert.equal(trainer.phase.value, 'high-precision');
 
@@ -380,7 +380,7 @@ test('player multiplication rotates only the C gap, then high precision resolves
   assert.equal(trainer.phase.value, 'resolved');
   assert.equal(trainer.highPrecisionResult.value.source, 'boss-high-precision');
   assert.deepEqual(trainer.highPrecisionResult.value.sourcePosition, { x: 2.5, y: 2.5 });
-  assert.equal(trainer.highPrecisionResult.value.gapRotationDegrees, 90);
+  assert.equal(trainer.highPrecisionResult.value.gapRotationDegrees, -90);
   assert.equal(trainer.highPrecisionResult.value.succeeded, true);
   assert.equal(trainer.analysisResults.value.length, 3);
   assert.equal(trainer.completedAllChecks.value, true);
@@ -391,11 +391,11 @@ test('player multiplication rotates only the C gap, then high precision resolves
 test('high precision uses the rotated gap and kills without changing player facing', () => {
   const { scheduler, trainer } = createTrainer();
   advanceThroughSecondOrb(scheduler, trainer);
-  const facingBeforeRotation = 0;
+  const facingBeforeRotation = 180;
   trainer.setPlayerFacingAngle(facingBeforeRotation);
 
   scheduler.advanceTo(SECOND_ORB_TIME + COMPOSITE_TIMING.playerRotationResolveMs);
-  assert.equal(trainer.playerGapRotationDegrees.value, 90);
+  assert.equal(trainer.playerGapRotationDegrees.value, -90);
   assert.equal(trainer.playerFacingAngle.value, facingBeforeRotation);
   scheduler.advanceTo(
     SECOND_ORB_TIME
@@ -408,6 +408,36 @@ test('high precision uses the rotated gap and kills without changing player faci
   assert.deepEqual(trainer.deathRecord.value.sourcePosition, { x: 2.5, y: 2.5 });
   assert.equal(trainer.deathRecord.value.gapCenterAngle, 90);
   assert.equal(Math.abs(trainer.deathRecord.value.angleDifference), 180);
+});
+
+test('all four player rotations pass high precision from the correct pre-facing and reject its opposite', () => {
+  const cases = [
+    { arrowSide: 'left', multiplier: 'III', rotation: -90 },
+    { arrowSide: 'left', multiplier: 'V', rotation: 90 },
+    { arrowSide: 'right', multiplier: 'III', rotation: 90 },
+    { arrowSide: 'right', multiplier: 'V', rotation: -90 }
+  ];
+
+  for (const testCase of cases) {
+    for (const opposite of [false, true]) {
+      const { scheduler, trainer } = createTrainer({
+        initialPlayerRotationCue: { ...testCase, dotPattern: 5 }
+      });
+      advanceThroughSecondOrb(scheduler, trainer);
+      const bossAngle = attackSourceAngle(trainer.playerPosition.value, { x: 2.5, y: 2.5 });
+      trainer.setPlayerFacingAngle(bossAngle - testCase.rotation + (opposite ? 180 : 0));
+
+      scheduler.advanceTo(
+        SECOND_ORB_TIME
+          + COMPOSITE_TIMING.playerRotationResolveMs
+          + COMPOSITE_TIMING.highPrecisionDelayMs
+      );
+
+      assert.equal(trainer.playerGapRotationDegrees.value, testCase.rotation);
+      assert.equal(trainer.highPrecisionResult.value.succeeded, !opposite);
+      assert.equal(trainer.phase.value, opposite ? 'dead' : 'resolved');
+    }
+  }
 });
 
 test('camera projection round trips without changing floor or analysis collision', () => {

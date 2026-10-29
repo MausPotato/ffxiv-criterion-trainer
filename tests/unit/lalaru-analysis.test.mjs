@@ -16,6 +16,20 @@ const sources = {
   left: { x: .5, y: 2.5 }
 };
 
+const ROTATION_TRUTH_TABLE = [
+  { arrowSide: 'left', multiplier: 'III', rotation: -90, preGap: 90 },
+  { arrowSide: 'left', multiplier: 'V', rotation: 90, preGap: -90 },
+  { arrowSide: 'right', multiplier: 'III', rotation: 90, preGap: -90 },
+  { arrowSide: 'right', multiplier: 'V', rotation: -90, preGap: 90 }
+];
+
+const DEBUFF_OFFSETS = { front: 0, right: 90, back: 180, left: -90 };
+
+function normalizeSigned(angle) {
+  const normalized = ((angle % 360) + 360) % 360;
+  return normalized > 180 ? normalized - 360 : normalized;
+}
+
 test('all four analysis debuffs accept an attack from their character-relative gap', () => {
   for (const debuff of ['front', 'back', 'left', 'right']) {
     assert.equal(isAttackInAnalysisGap(player, 0, debuff, sources[debuff]), true, debuff);
@@ -59,28 +73,50 @@ test('C-ring path rotates with facing and debuff without changing its gap size',
   assert.match(frontNorth, /^M .+ A 40 40 0 1 1 /);
 });
 
-test('player III/V multiplication converts the selected side into a separate 90 degree gap offset', () => {
-  assert.equal(analysisRotationOffsetDegrees('left', 'III'), 90);
-  assert.equal(analysisRotationOffsetDegrees('left', 'V'), -90);
-  assert.equal(analysisRotationOffsetDegrees('right', 'III'), -90);
-  assert.equal(analysisRotationOffsetDegrees('right', 'V'), 90);
+test('player rotation uses the independently verified III/V by arrow-direction truth table', () => {
+  for (const { arrowSide, multiplier, rotation } of ROTATION_TRUTH_TABLE) {
+    assert.equal(
+      analysisRotationOffsetDegrees(arrowSide, multiplier),
+      rotation,
+      `${arrowSide}/${multiplier}`
+    );
+  }
 });
 
-test('三有五沒 pre-facing cancels the existing player rotation toward the intended result', () => {
-  const preFacingByCue = {
-    'left-III': -90,
-    'right-III': 90,
-    'left-V': 90,
-    'right-V': -90
-  };
-  for (const arrowSide of ['left', 'right']) {
-    for (const multiplier of ['III', 'V']) {
-      const initialFacing = preFacingByCue[`${arrowSide}-${multiplier}`];
-      assert.equal(
-        initialFacing + analysisRotationOffsetDegrees(arrowSide, multiplier),
-        0,
-        `${arrowSide}/${multiplier}`
-      );
+test('三沒五有 pre-rotation gaps face a boss due north after multiplication', () => {
+  for (const { arrowSide, multiplier, rotation, preGap } of ROTATION_TRUTH_TABLE) {
+    assert.equal(normalizeSigned(preGap + rotation), 0, `${arrowSide}/${multiplier}`);
+    assert.equal(analysisRotationOffsetDegrees(arrowSide, multiplier), rotation);
+  }
+});
+
+test('all analysis debuffs preserve their relative gap offset through multiplication', () => {
+  const sourceAngles = [0, 90, 180, -90, 45];
+  for (const sourceAngle of sourceAngles) {
+    const radians = sourceAngle * Math.PI / 180;
+    const source = {
+      x: player.x + Math.sin(radians) * 2,
+      y: player.y - Math.cos(radians) * 2
+    };
+    for (const [debuff, debuffOffset] of Object.entries(DEBUFF_OFFSETS)) {
+      for (const { arrowSide, multiplier, rotation } of ROTATION_TRUTH_TABLE) {
+        const preFacing = sourceAngle - debuffOffset - rotation;
+        assert.equal(
+          normalizeSigned(analysisGapCenterAngle(preFacing, debuff, rotation)),
+          normalizeSigned(sourceAngle),
+          `${sourceAngle}/${debuff}/${arrowSide}/${multiplier}`
+        );
+        assert.equal(
+          isAttackInAnalysisGap(player, preFacing, debuff, source, 45, rotation),
+          true,
+          `${sourceAngle}/${debuff}/${arrowSide}/${multiplier}`
+        );
+        assert.equal(
+          isAttackInAnalysisGap(player, preFacing + 180, debuff, source, 45, rotation),
+          false,
+          `opposite ${sourceAngle}/${debuff}/${arrowSide}/${multiplier}`
+        );
+      }
     }
   }
 });
