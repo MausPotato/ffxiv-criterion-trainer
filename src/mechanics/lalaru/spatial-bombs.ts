@@ -8,6 +8,13 @@ export type QuarterTurn = 0 | 1 | 2 | 3;
 export type SpatialRouteId = 'route-a' | 'route-b';
 export type SpatialDamageKind = 'white-orb' | 'cross-bomb';
 
+const SPATIAL_PARTY_DIAMOND_OFFSETS: Readonly<Record<SpatialPartyId, ArenaPoint>> = {
+  you: { x: 0, y: -.24 },
+  'npc-a': { x: .24, y: 0 },
+  'npc-b': { x: 0, y: .24 },
+  'npc-c': { x: -.24, y: 0 }
+};
+
 export interface SpatialRouteStep {
   step: number;
   cell: GridCell;
@@ -226,6 +233,35 @@ export function rotateSpatialPoint(point: ArenaPoint, turns: QuarterTurn): Arena
 export function spatialStandardPosition(layer: SubtractionLayer, rotation: QuarterTurn = 0): ArenaPoint {
   const base = layer <= 2 ? { x: 2.5, y: 2.5 } : { x: 2.5, y: 3.5 };
   return rotateSpatialPoint(base, rotation);
+}
+
+export function spatialInitialPartyPosition(id: SpatialPartyId): ArenaPoint {
+  const offset = SPATIAL_PARTY_DIAMOND_OFFSETS[id];
+  return {
+    x: 2.5 + offset.x,
+    y: 2.5 + offset.y
+  };
+}
+
+export function offsetSpatialPartyPosition(
+  id: SpatialPartyId,
+  base: ArenaPoint,
+  rotation: QuarterTurn = 0
+): ArenaPoint {
+  const offset = SPATIAL_PARTY_DIAMOND_OFFSETS[id];
+  return rotateSpatialPoint({
+    x: base.x + offset.x,
+    y: base.y + offset.y
+  }, rotation);
+}
+
+export function spatialStandardPartyPosition(
+  id: SpatialPartyId,
+  layer: SubtractionLayer,
+  rotation: QuarterTurn = 0
+): ArenaPoint {
+  const base = layer <= 2 ? { x: 2.5, y: 2.5 } : { x: 2.5, y: 3.5 };
+  return offsetSpatialPartyPosition(id, base, rotation);
 }
 
 export const SPATIAL_ROUTE_STEPS = 9;

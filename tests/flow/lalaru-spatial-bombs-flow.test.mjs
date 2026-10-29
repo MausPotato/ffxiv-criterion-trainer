@@ -1,7 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { useLalaRuSpatialBombsTrainer } from '../../src/composables/useLalaRuSpatialBombsTrainer.ts';
-import { SPATIAL_BOMBS_TIMING } from '../../src/mechanics/lalaru/index.ts';
+import {
+  LALARU_BOSS_POSITION,
+  SPATIAL_BOMBS_TIMING,
+  spatialInitialPartyPosition,
+  spatialStandardPartyPosition
+} from '../../src/mechanics/lalaru/index.ts';
 
 class FakeScheduler {
   time = 0;
@@ -58,6 +63,32 @@ function createTrainer(playerLayer = 1) {
 const REVEAL_AT = SPATIAL_BOMBS_TIMING.revealDelayMs;
 const STEP_ONE_AT = REVEAL_AT + SPATIAL_BOMBS_TIMING.previewDurationMs;
 const stepAt = step => STEP_ONE_AT + (step - 1) * SPATIAL_BOMBS_TIMING.stepIntervalMs;
+
+test('all actors begin in a small diamond inside the boss cell before NPCs take their assignments', () => {
+  const { scheduler, trainer } = createTrainer(4);
+  const initial = trainer.actorPositions.value;
+  const positions = Object.values(initial);
+
+  assert.equal(new Set(positions.map(position => `${position.x},${position.y}`)).size, 4);
+  for (const [id, position] of Object.entries(initial)) {
+    assert.deepEqual(position, spatialInitialPartyPosition(id));
+    assert.equal(Math.floor(position.x), Math.floor(LALARU_BOSS_POSITION.x));
+    assert.equal(Math.floor(position.y), Math.floor(LALARU_BOSS_POSITION.y));
+  }
+
+  trainer.start();
+  scheduler.advanceTo(REVEAL_AT - 1);
+  assert.deepEqual(trainer.actorPositions.value, initial);
+  scheduler.advanceTo(REVEAL_AT);
+
+  assert.deepEqual(trainer.actorPositions.value.you, initial.you, 'the player is never placed on the answer');
+  for (const member of trainer.question.value.party.filter(member => member.id !== 'you')) {
+    assert.deepEqual(
+      trainer.actorPositions.value[member.id],
+      spatialStandardPartyPosition(member.id, member.initialLayer, trainer.question.value.rotation)
+    );
+  }
+});
 
 test('the arena stays empty for the composite lead-in before the three-second preview', () => {
   const { scheduler, trainer } = createTrainer(1);
@@ -135,9 +166,11 @@ test('layer one remaining in the center dies to the step seven cross', () => {
   assert.match(trainer.deathRecord.value.sourceId, /bomb-7/);
 });
 
-test('layer four that never moves south expires with one stack', () => {
+test('layer four that takes the initial south position but skips the final move expires with one stack', () => {
   const { scheduler, trainer } = createTrainer(4);
   trainer.start();
+  scheduler.advanceTo(REVEAL_AT);
+  trainer.setPlayerPosition({ x: 2.5, y: 3.5 });
   scheduler.advanceTo(stepAt(9));
   assert.equal(trainer.phase.value, 'dead');
   assert.equal(trainer.deathRecord.value.code, 'debuff-expired');
@@ -174,6 +207,7 @@ test('rotation cue runs for five seconds and cannon resolves from the live posit
 test('magic cannon independently kills a player outside its final safe sector', () => {
   const { scheduler, trainer } = createTrainer(2);
   trainer.start();
+  trainer.setPlayerPosition({ x: 2.74, y: 2.5 });
   scheduler.advanceTo(stepAt(9) + SPATIAL_BOMBS_TIMING.cannonAfterFinalBombDelayMs);
   assert.equal(trainer.remainingLayers.value.you, 0);
   assert.equal(trainer.phase.value, 'cannon-countdown');
