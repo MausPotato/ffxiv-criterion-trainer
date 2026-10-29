@@ -1,7 +1,6 @@
 import type { ArenaPoint } from './types.ts';
 import type { ArrowSide, Multiplier } from './types.ts';
 import { pointDirectionDegrees } from './geometry.ts';
-import { selectSide } from './solver.ts';
 
 export type AnalysisDebuff = 'front' | 'back' | 'left' | 'right';
 
@@ -28,7 +27,10 @@ export function analysisRotationOffsetDegrees(
   arrowSide: ArrowSide,
   multiplier: Multiplier
 ): number {
-  return selectSide(arrowSide, multiplier) === 'left' ? -90 : 90;
+  // 0° is north and positive is clockwise. III's 270° is the opposite
+  // quarter-turn; V's 450° is the same quarter-turn as the arrow direction.
+  const arrowRotation = arrowSide === 'left' ? 90 : -90;
+  return multiplier === 'V' ? arrowRotation : -arrowRotation;
 }
 
 export function analysisGapCenterAngle(

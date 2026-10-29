@@ -47,20 +47,20 @@ const playerRules = [
     multiplier: 'V',
     icon: MECHANIC_ICONS.multiplyV,
     lead: '我是 5 Buff',
-    keyword: '沒',
+    keyword: '有',
     cases: [
-      { arrow: 'left', facing: 'right' },
-      { arrow: 'right', facing: 'left' }
+      { arrow: 'left', gap: 'left' },
+      { arrow: 'right', gap: 'right' }
     ]
   },
   {
     multiplier: 'III',
     icon: MECHANIC_ICONS.multiplyIII,
     lead: '我是 3 Buff',
-    keyword: '有',
+    keyword: '沒',
     cases: [
-      { arrow: 'left', facing: 'left' },
-      { arrow: 'right', facing: 'right' }
+      { arrow: 'left', gap: 'right' },
+      { arrow: 'right', gap: 'left' }
     ]
   }
 ] as const;
@@ -82,14 +82,14 @@ const playerRules = [
           :class="{ active: activeView === 'player' }"
           :aria-pressed="activeView === 'player'"
           @click="activeView = 'player'"
-        >玩家預先面向</button>
+        >玩家旋轉前缺口</button>
       </div>
 
       <div class="cheat-sheet-heading">
-        <h2>{{ activeView === 'boss' ? '王的乘算安全區｜三沒五有' : '玩家預先面向｜三有五沒' }}</h2>
+        <h2>{{ activeView === 'boss' ? '王的乘算安全區｜三沒五有' : '旋轉前缺口｜三沒五有' }}</h2>
         <p>{{ activeView === 'boss'
           ? '從王的 Buff 與箭頭，判斷魔紋炮旋轉後的安全側。'
-          : '先決定旋轉後要讓缺口或前進方向朝哪裡，再反推旋轉前面向。' }}</p>
+          : '以 BOSS 在正前方為基準，先決定旋轉前缺口；角色面向仍須配合 Analysis Debuff。' }}</p>
       </div>
 
       <div v-if="activeView === 'boss'" class="rule-grid">
@@ -133,7 +133,7 @@ const playerRules = [
         <article v-for="rule in playerRules" :key="rule.multiplier" class="rule-column">
           <div class="rule-copy">
             <img :src="rule.icon" :alt="`${rule.multiplier} 乘算圖示`">
-            <p><strong>{{ rule.lead }}</strong><br>旋轉前面向<strong class="rule-keyword">{{ rule.keyword }}</strong>箭頭側</p>
+            <p><strong>{{ rule.lead }}</strong><br>旋轉前缺口放在<strong class="rule-keyword">{{ rule.keyword }}</strong>箭頭側</p>
           </div>
 
           <div class="rule-examples" aria-hidden="true">
@@ -155,10 +155,11 @@ const playerRules = [
                 class="cue-arrow right"
                 d="M 67 69 L 80 56 L 80 34 M 80 34 L 70 45 M 80 34 L 90 45"
               />
-              <path
-                class="facing-mark"
-                :class="example.facing"
-                :d="example.facing === 'left' ? 'M 50 43 L 19 43 M 19 43 L 29 35 M 19 43 L 29 51' : 'M 50 43 L 81 43 M 81 43 L 71 35 M 81 43 L 71 51'"
+              <circle
+                class="gap-mark"
+                :cx="example.gap === 'left' ? 20 : 80"
+                cy="48"
+                r="17"
               />
             </svg>
           </div>
@@ -168,7 +169,7 @@ const playerRules = [
       <p class="viewpoint-note">
         {{ activeView === 'boss'
           ? '紅圈標示旋轉後的安全側；先把初始安全缺口想成在自己腳下。'
-          : '白箭頭標示旋轉前的角色面向；乘算仍使用同一套旋轉規則。' }}
+          : '紅圈標示旋轉前缺口；分析機制需再依 Debuff 換算角色面向，平面爆雷則反推旋轉前前進方向。' }}
       </p>
   </TrainerQuickReference>
 </template>
@@ -199,7 +200,7 @@ const playerRules = [
 .cue-arrow.left { stroke: #e44732; }
 .cue-arrow.right { stroke: #35a9ff; }
 .safe-mark { fill: none; stroke: #ff4b55; stroke-width: 4; }
-.facing-mark { fill: none; stroke: #f4f8fa; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
+.gap-mark { fill: none; stroke: #ff4b55; stroke-width: 4; }
 .viewpoint-note { margin: 0 1px; color: var(--text-helper); font-size: 11px; line-height: 1.5; }
 
 @media (max-width: 390px) {
