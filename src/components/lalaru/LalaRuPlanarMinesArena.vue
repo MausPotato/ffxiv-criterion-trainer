@@ -13,6 +13,7 @@ import {
   type PlanarPartyId,
   type PlanarPhase
 } from '../../mechanics/lalaru/index.ts';
+import { worldPointToCameraPoint } from '../../presentation/lalaru/camera.ts';
 import TrainerCameraControls from '../trainer/TrainerCameraControls.vue';
 import TrainerStartOverlay from '../trainer/TrainerStartOverlay.vue';
 import { trainerResultLabel } from '../../presentation/trainer-result.ts';
@@ -90,6 +91,14 @@ function npcStyle(assignment: PlanarAssignedPosition): Record<string, string> {
   return pointStyle(position);
 }
 
+function rotationCueStyle(point: ArenaPoint): Record<string, string> {
+  const screenPoint = worldPointToCameraPoint(point, cameraRotation.value);
+  return {
+    left: `${screenPoint.x / LALARU_FIELD_SIZE * 100}%`,
+    top: `${screenPoint.y / LALARU_FIELD_SIZE * 100}%`
+  };
+}
+
 function cellStyle(cell: PlanarMineCell): Record<string, string> {
   return { left: `${cell.col * 20}%`, top: `${cell.row * 20}%` };
 }
@@ -159,9 +168,6 @@ function mineKey(cell: PlanarMineCell): string {
             :remaining-seconds="remainingSeconds"
             :camera-rotation="cameraRotation"
           />
-          <div v-if="rotationCueVisible" class="actor-rotation-cue" :style="{ '--counter-rotation': `${-cameraRotation}deg` }">
-            <RotationCueIcon :arrow-side="assignment.member.arrowSide" :dot-count="rotationDotCount" :animation-key="rotationAnimationKey" playing />
-          </div>
         </div>
 
         <button
@@ -190,14 +196,25 @@ function mineKey(cell: PlanarMineCell): string {
             :remaining-seconds="remainingSeconds"
             :camera-rotation="cameraRotation"
           />
-          <div v-if="rotationCueVisible" class="actor-rotation-cue" :style="{ '--counter-rotation': `${-cameraRotation}deg` }">
-            <RotationCueIcon :arrow-side="playerAssignment.member.arrowSide" :dot-count="rotationDotCount" :animation-key="rotationAnimationKey" playing />
-          </div>
         </button>
 
         <span class="cardinal cardinal-north">N</span>
         <span class="cardinal cardinal-east">E</span>
       </div>
+
+      <template v-if="rotationCueVisible">
+        <div
+          v-for="assignment in showNpcs ? npcAssignments : []"
+          :key="`rotation-cue-${assignment.member.id}`"
+          class="actor-rotation-cue"
+          :style="rotationCueStyle(actorPositions[assignment.member.id] ?? assignment.worldPosition)"
+        >
+          <RotationCueIcon :arrow-side="assignment.member.arrowSide" :dot-count="rotationDotCount" :animation-key="rotationAnimationKey" playing />
+        </div>
+        <div class="actor-rotation-cue" :style="rotationCueStyle(playerPosition)">
+          <RotationCueIcon :arrow-side="playerAssignment.member.arrowSide" :dot-count="rotationDotCount" :animation-key="rotationAnimationKey" playing />
+        </div>
+      </template>
 
       <TrainerStartOverlay
         v-if="phase === 'idle'"
@@ -241,7 +258,7 @@ function mineKey(cell: PlanarMineCell): string {
 .player-actor.dragging { cursor: grabbing; box-shadow: 0 0 0 6px rgba(255, 255, 255, .32); }
 .stack-range { position: absolute; top: 50%; left: 50%; z-index: -1; width: 300%; aspect-ratio: 1; border: 2px solid rgba(215, 178, 255, .82); border-radius: 50%; background: rgba(133, 78, 186, .08); box-shadow: 0 0 8px rgba(189, 127, 255, .48), inset 0 0 8px rgba(189, 127, 255, .18); transform: translate(-50%, -50%); pointer-events: none; }
 .stack-range.resolving { z-index: 8; border-width: 4px; background: rgba(205, 158, 255, .36); box-shadow: 0 0 24px #c58aff, inset 0 0 18px rgba(255,255,255,.7); animation: stack-impact .65s ease-out both; }
-.actor-rotation-cue { position: absolute; top: -105px; left: 50%; z-index: 12; transform: translateX(-50%) rotate(var(--counter-rotation)) scale(.72); transform-origin: center bottom; pointer-events: none; }
+.actor-rotation-cue { position: absolute; z-index: 27; transform: translate(-50%, -118%) scale(.72); transform-origin: center bottom; pointer-events: none; }
 .cardinal { position: absolute; z-index: 6; color: rgba(218, 244, 248, .75); font: 800 12px ui-monospace, monospace; pointer-events: none; }
 .cardinal-north { top: 8px; left: 50%; transform: translateX(-50%); } .cardinal-east { top: 50%; right: 9px; transform: translateY(-50%); }
 .planar-result { position: absolute; top: 14px; left: 50%; z-index: 28; padding: 8px 20px; border: 1px solid currentColor; border-radius: 999px; transform: translateX(-50%); font-weight: 900; letter-spacing: .12em; background: rgba(5, 15, 22, .9); }

@@ -90,6 +90,11 @@ test('spatial cannon renders the saved boss multiplier above actors through coun
   assert.match(arena, /:name="cannonQuestion\.multiplier === 'III' \? 'multiplyIII' : 'multiplyV'"/);
   assert.match(arena, /:arrow-side="cannonQuestion\.arrowSide"/);
   assert.match(arena, /\.boss-cannon-cues \{[^}]*z-index: 19;/);
+  assert.ok(
+    arena.indexOf('class="boss-cannon-cues"') > arena.indexOf('class="arena-result failure"'),
+    'the cannon cue is rendered outside the camera-rotated arena layer'
+  );
+  assert.doesNotMatch(arena, /class="cannon-countdown"|\.cannon-countdown \{/);
   assert.match(view, /:cannon-question="trainer\.question\.value\.cannon"/);
   assert.match(view, /:cannon-safe-direction="trainer\.cannonSolution\.value\.finalSafeDirection"/);
 });

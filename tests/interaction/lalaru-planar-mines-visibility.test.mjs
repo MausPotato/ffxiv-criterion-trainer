@@ -21,6 +21,22 @@ test('planar arena reuses shared camera, drag, keyboard and facing controls', as
   assert.match(arena, /beginCameraDrag/);
 });
 
+test('planar rotation cues stay screen-upright directly above their live actors', async () => {
+  const arena = await readFile(
+    new URL('../../src/components/lalaru/LalaRuPlanarMinesArena.vue', import.meta.url),
+    'utf8'
+  );
+  assert.match(arena, /import \{ worldPointToCameraPoint \} from/);
+  assert.match(arena, /const screenPoint = worldPointToCameraPoint\(point, cameraRotation\.value\)/);
+  assert.match(arena, /:style="rotationCueStyle\(playerPosition\)"/);
+  assert.match(arena, /rotationCueStyle\(actorPositions\[assignment\.member\.id\] \?\? assignment\.worldPosition\)/);
+  assert.ok(
+    arena.indexOf('class="actor-rotation-cue"') > arena.indexOf('class="cardinal cardinal-east"'),
+    'rotation cues are rendered outside the camera-rotated arena layer'
+  );
+  assert.doesNotMatch(arena, /--counter-rotation/);
+});
+
 test('strategy selector does not rotate the camera or auto-place the player', async () => {
   const composable = await readFile(
     new URL('../../src/composables/useLalaRuPlanarMinesTrainer.ts', import.meta.url),
