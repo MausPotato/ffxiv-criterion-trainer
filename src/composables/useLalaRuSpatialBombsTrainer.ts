@@ -8,14 +8,15 @@ import {
   generateLalaRuQuestion,
   isPointInSafeSector,
   movementSegmentTouchesDanger,
-  rotateSpatialPoint,
+  offsetSpatialPartyPosition,
   shuffleSpatialLayers,
   solveQuestion,
   spatialCellsAtStep,
   spatialDamageSourcesAtStep,
   spatialDangerousCellsThroughStep,
   spatialSourceHitsPoint,
-  spatialStandardPosition,
+  spatialInitialPartyPosition,
+  spatialStandardPartyPosition,
   type ArenaPoint,
   type GridCell,
   type LalaRuQuestion,
@@ -120,9 +121,9 @@ export function useLalaRuSpatialBombsTrainer(options: SpatialBombTrainerOptions 
   }
 
   function initialPositions(): Record<SpatialPartyId, ArenaPoint> {
-    return Object.fromEntries(question.value.party.map(member => [
-      member.id,
-      spatialStandardPosition(member.initialLayer, question.value.rotation)
+    return Object.fromEntries(SPATIAL_PARTY_IDS.map(id => [
+      id,
+      spatialInitialPartyPosition(id)
     ])) as Record<SpatialPartyId, ArenaPoint>;
   }
 
@@ -219,10 +220,10 @@ export function useLalaRuSpatialBombsTrainer(options: SpatialBombTrainerOptions 
   function moveNpcForStep(step: number): void {
     for (const member of question.value.party.filter(candidate => candidate.id !== 'you')) {
       if (step === 3 && member.initialLayer === 1) {
-        setActorPosition(member.id, rotateSpatialPoint({ x: 2.5, y: 1.5 }, question.value.rotation));
+        setActorPosition(member.id, offsetSpatialPartyPosition(member.id, { x: 2.5, y: 1.5 }, question.value.rotation));
       }
       if (step === 6 && member.initialLayer === 4) {
-        setActorPosition(member.id, rotateSpatialPoint({ x: 2.5, y: 4.5 }, question.value.rotation));
+        setActorPosition(member.id, offsetSpatialPartyPosition(member.id, { x: 2.5, y: 4.5 }, question.value.rotation));
       }
     }
   }
@@ -326,6 +327,13 @@ export function useLalaRuSpatialBombsTrainer(options: SpatialBombTrainerOptions 
 
   function beginPreview(): void {
     if (phase.value !== 'lead-in' || deathRecord.value) return;
+    for (const member of question.value.party) {
+      if (member.id === 'you') continue;
+      setActorPosition(
+        member.id,
+        spatialStandardPartyPosition(member.id, member.initialLayer, question.value.rotation)
+      );
+    }
     phase.value = 'preview';
     schedule(advanceStep, SPATIAL_BOMBS_TIMING.previewDurationMs + SPATIAL_BOMBS_TIMING.firstStepOffsetMs);
   }
