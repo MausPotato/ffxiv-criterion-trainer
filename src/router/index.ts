@@ -7,6 +7,7 @@ import LalaRuCompositeTrainerView from '../views/LalaRuCompositeTrainerView.vue'
 import LalaRuAnalysisTrainerView from '../views/LalaRuAnalysisTrainerView.vue';
 import LalaRuPlanarMinesTrainerView from '../views/LalaRuPlanarMinesTrainerView.vue';
 import LalaRuSpatialBombsTrainerView from '../views/LalaRuSpatialBombsTrainerView.vue';
+import LalaRuSummonedDollsTrainerView from '../views/LalaRuSummonedDollsTrainerView.vue';
 
 export const router = createRouter({
   history: createWebHashHistory(import.meta.env.BASE_URL),
@@ -51,6 +52,11 @@ export const router = createRouter({
       path: '/aloalo-island/lalaru/spatial-bombs',
       name: 'lalaru-spatial-bombs-trainer',
       component: LalaRuSpatialBombsTrainerView
+    },
+    {
+      path: '/aloalo-island/lalaru/summoned-dolls',
+      name: 'lalaru-summoned-dolls-trainer',
+      component: LalaRuSummonedDollsTrainerView
     },
     {
       path: '/dungeons/aloalo-island/bosses/ketuduke/mechanics/queue-method',

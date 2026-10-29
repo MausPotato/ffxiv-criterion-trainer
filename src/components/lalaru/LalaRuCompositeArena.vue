@@ -37,6 +37,7 @@ import TrainerCameraControls from '../trainer/TrainerCameraControls.vue';
 import PlayerFacingIndicator from './PlayerFacingIndicator.vue';
 import RotationCueIcon from './RotationCueIcon.vue';
 import TrainerStartOverlay from '../trainer/TrainerStartOverlay.vue';
+import { LALARU_BOSS_DIAMETER } from '../../presentation/lalaru/actor-visuals.ts';
 
 const props = defineProps<{
   phase: CompositePhase;
@@ -251,7 +252,7 @@ function orbStyle(orb: CompositeOrb): Record<string, string> {
           aria-hidden="true"
         ><span class="composite-orb"></span></div>
 
-        <div class="boss-actor" :style="actorStyle(LALARU_BOSS_POSITION, .72)">
+        <div class="boss-actor" :style="actorStyle(LALARU_BOSS_POSITION, LALARU_BOSS_DIAMETER)">
           <span class="boss-facing" aria-hidden="true"></span>
           <span>拉拉魯</span>
         </div>

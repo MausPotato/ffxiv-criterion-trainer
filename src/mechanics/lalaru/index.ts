@@ -11,3 +11,4 @@ export * from './planar-mines.ts';
 export * from './planar-mines-resolution.ts';
 export * from './spatial-bombs.ts';
 export * from './spatial-bombs-timing.ts';
+export * from './summoned-dolls.ts';

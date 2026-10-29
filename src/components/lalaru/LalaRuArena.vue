@@ -20,6 +20,7 @@ import MechanicIcon from '../trainer/MechanicIcon.vue';
 import TrainerCameraControls from '../trainer/TrainerCameraControls.vue';
 import TrainerStartOverlay from '../trainer/TrainerStartOverlay.vue';
 import PlayerFacingIndicator from './PlayerFacingIndicator.vue';
+import { LALARU_BOSS_DIAMETER } from '../../presentation/lalaru/actor-visuals.ts';
 
 const props = defineProps<{
   phase: LalaRuPhase;
@@ -129,7 +130,7 @@ function actorStyle(point: ArenaPoint, diameter: number): Record<string, string>
 
         <div
           class="boss-actor"
-          :style="actorStyle(LALARU_BOSS_POSITION, .72)"
+          :style="actorStyle(LALARU_BOSS_POSITION, LALARU_BOSS_DIAMETER)"
           aria-label="拉拉魯，面向北方"
         >
           <span class="boss-facing" aria-hidden="true"></span>

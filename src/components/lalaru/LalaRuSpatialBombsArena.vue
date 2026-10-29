@@ -22,6 +22,7 @@ import TrainerCameraControls from '../trainer/TrainerCameraControls.vue';
 import MechanicIcon from '../trainer/MechanicIcon.vue';
 import { MECHANIC_ICONS } from '../../assets/mechanic-icons.ts';
 import TrainerStartOverlay from '../trainer/TrainerStartOverlay.vue';
+import { LALARU_BOSS_DIAMETER } from '../../presentation/lalaru/actor-visuals.ts';
 
 const props = defineProps<{
   phase: SpatialBombPhase;
@@ -246,7 +247,7 @@ function crossStyle(cell: GridCell): Record<string, string> {
           />
         </svg>
 
-        <div class="spatial-boss" :style="actorStyle(LALARU_BOSS_POSITION, .72)">
+        <div class="spatial-boss" :style="actorStyle(LALARU_BOSS_POSITION, LALARU_BOSS_DIAMETER)">
           <span class="boss-facing" aria-hidden="true"></span>
           <span>拉拉魯</span>
         </div>

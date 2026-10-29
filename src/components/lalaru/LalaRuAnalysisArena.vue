@@ -14,6 +14,7 @@ import { MECHANIC_ICONS, type MechanicIconName } from '../../assets/mechanic-ico
 import TrainerCameraControls from '../trainer/TrainerCameraControls.vue';
 import AnalysisRing from './AnalysisRing.vue';
 import PlayerFacingIndicator from './PlayerFacingIndicator.vue';
+import { LALARU_BOSS_DIAMETER } from '../../presentation/lalaru/actor-visuals.ts';
 
 const props = defineProps<{
   phase: AnalysisPhase;
@@ -94,7 +95,7 @@ function actorStyle(point: ArenaPoint, diameter: number): Record<string, string>
         <div class="cardinal cardinal-north">N</div>
         <div class="cardinal cardinal-east">E</div>
 
-        <div class="boss-actor" :style="actorStyle(LALARU_BOSS_POSITION, .72)">
+        <div class="boss-actor" :style="actorStyle(LALARU_BOSS_POSITION, LALARU_BOSS_DIAMETER)">
           <span class="boss-facing" aria-hidden="true"></span>
           <span>拉拉魯</span>
         </div>

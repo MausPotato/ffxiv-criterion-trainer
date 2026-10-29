@@ -48,6 +48,11 @@ export const TRAINER_NAVIGATION_REGISTRY: Readonly<
       id: 'spatial-bombs',
       label: '立體炸彈',
       to: '/aloalo-island/lalaru/spatial-bombs'
+    },
+    {
+      id: 'summoned-dolls',
+      label: '召喚人偶',
+      to: '/aloalo-island/lalaru/summoned-dolls'
     }
   ]
 };

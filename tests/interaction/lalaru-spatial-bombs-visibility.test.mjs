@@ -74,7 +74,7 @@ test('spatial arena reuses composite markers, renders cube bombs, and keeps plan
   assert.match(arena, /\.spatial-actor\.npc \{ border-color: #95d7ae; background: #24533d; transition: left var\(--npc-move-duration\)/);
   assert.doesNotMatch(arena, /\.spatial-actor \{[^}]*transition:/);
   assert.match(arena, /actorStyle\(position, \.4\)/);
-  assert.match(arena, /actorStyle\(LALARU_BOSS_POSITION, \.72\)/);
+  assert.match(arena, /actorStyle\(LALARU_BOSS_POSITION, LALARU_BOSS_DIAMETER\)/);
   assert.match(arena, /border: 3px solid #efc96d/);
   assert.doesNotMatch(arena, /#dca7ff|#492f5d|214, 143, 255/);
   assert.match(arena, /'npc-a': 'A'/);
