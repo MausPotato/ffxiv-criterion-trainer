@@ -7,6 +7,10 @@ export const SUMMONED_DOLLS_CONFIRMED_LANE_PATTERNS = [
   [1, 3, 4]
 ] as const;
 export const SUMMONED_DOLLS_PATTERN_DISPLAY_STEP_MS = 650;
+export const SUMMONED_DOLLS_SHIFT_DISPLAY_MS = 700;
+export const SUMMONED_DOLLS_MAGIC_BURST_DISPLAY_RADIUS = .72;
+export const SUMMONED_DOLLS_MAGIC_BURST_MOVEMENT_MS = 700;
+export const SUMMONED_DOLLS_ENUMERATION_DISPLAY_RADIUS = .45;
 
 export type SummonedDollsFloorState =
   | 'normal'
@@ -21,6 +25,31 @@ export type SummonedDollsFloorEffectSource = 'gale' | 'changing-pattern' | 'ligh
 export type SummonedDollsPartyId = 'tank' | 'healer' | 'dps-melee' | 'dps-ranged';
 export type SummonedDollsRole = 'tank' | 'healer' | 'dps';
 export type SummonedDollsStatusId = 'even-explosion-target' | 'magic-vulnerability-up';
+export type SummonedDollsShiftDirection = 'left' | 'right';
+export type SummonedDollsShiftPhase =
+  | 'locked-before-gale'
+  | 'floor-resolved'
+  | 'ready'
+  | 'moving'
+  | 'complete'
+  | 'prepare-magic-burst';
+export type SummonedDollsMagicBurstPhase =
+  | 'inactive'
+  | 'cast'
+  | 'targets'
+  | 'positioning'
+  | 'snapshot'
+  | 'first-impact'
+  | 'vulnerability'
+  | 'second-telegraph'
+  | 'evacuation'
+  | 'second-impact'
+  | 'complete';
+export type SummonedDollsMagicBurstCirclePhase = 'tracking' | 'snapshot' | 'first-impact'
+  | 'second-telegraph' | 'second-impact';
+export type SummonedDollsEnumerationPhase = 'inactive' | 'ready' | 'snapshot' | 'impact'
+  | 'resolved' | 'finished';
+export type SummonedDollsEnumerationTargetId = 'dps-melee' | 'dps-ranged';
 
 export interface SummonedDollsCell {
   row: number;
@@ -79,12 +108,24 @@ export type SummonedDollsEventId =
   | 'light-blast-floor'
   | 'magic-vulnerability'
   | 'prepare-shift'
+  | 'shift-ready'
   | 'shift-to-former-aoe'
+  | 'shift-complete'
+  | 'prepare-magic-burst'
   | 'magic-burst-cast'
-  | 'spread-markers'
-  | 'second-aoe-placement'
-  | 'return-to-center'
-  | 'dps-stacks';
+  | 'magic-burst-targets'
+  | 'magic-burst-positioning'
+  | 'magic-burst-snapshot'
+  | 'magic-burst-first-impact'
+  | 'magic-burst-vulnerability'
+  | 'magic-burst-second-telegraph'
+  | 'magic-burst-evacuation'
+  | 'magic-burst-second-impact'
+  | 'enumeration-stack-ready'
+  | 'enumeration-stack-snapshot'
+  | 'enumeration-stack-impact'
+  | 'enumeration-stack-resolved'
+  | 'mechanic-finished';
 
 export interface SummonedDollsEventSpec {
   id: SummonedDollsEventId;
@@ -105,6 +146,7 @@ export interface SummonedDollsStatusSpec {
   resolvesAtEventId: SummonedDollsEventId | null;
   /** Null means the game duration has not been confirmed and must not be fabricated. */
   durationMs: number | null;
+  reappliedAtEventIds?: readonly SummonedDollsEventId[];
   resolutionPairs?: readonly {
     targetId: SummonedDollsPartyId;
     partnerId: SummonedDollsPartyId;
@@ -146,12 +188,95 @@ export interface SummonedDollsFirstResolutionConfig {
   relativeOrderConfirmed: boolean;
 }
 
+export interface SummonedDollsShiftCandidate {
+  direction: SummonedDollsShiftDirection;
+  position: ArenaPoint;
+  cell: SummonedDollsCell;
+}
+
+export interface SummonedDollsShiftPlan {
+  configurationKey: string;
+  startPositions: Readonly<Record<SummonedDollsPartyId, ArenaPoint>>;
+  candidates: Readonly<Record<SummonedDollsPartyId, readonly SummonedDollsShiftCandidate[]>>;
+  targetPositions: Readonly<Partial<Record<SummonedDollsPartyId, ArenaPoint>>>;
+  targetCells: Readonly<Partial<Record<SummonedDollsPartyId, SummonedDollsCell>>>;
+  collisionFree: boolean;
+}
+
+export interface SummonedDollsMagicBurstConfig {
+  /** Radius in arena world units. Display-only until verified against game footage. */
+  displayRadius: number;
+  radiusConfirmed: false;
+  movementDisplayMs: number;
+  placementPositions: Readonly<Record<SummonedDollsPartyId, ArenaPoint>>;
+  enumerationPreparationPositions: Readonly<Record<SummonedDollsPartyId, ArenaPoint>>;
+  enumerationGroups: readonly [
+    readonly ['tank', 'dps-melee'],
+    readonly ['healer', 'dps-ranged']
+  ];
+  enumerationDisplayRadius: number;
+  enumerationRadiusConfirmed: false;
+}
+
+export interface SummonedDollsMagicBurstCircle {
+  sourceId: SummonedDollsPartyId;
+  position: ArenaPoint;
+  radius: number;
+  radiusConfirmed: false;
+  phase: SummonedDollsMagicBurstCirclePhase;
+}
+
+export interface SummonedDollsMagicBurstSnapshot {
+  capturedAtEventId: 'magic-burst-snapshot';
+  positions: Readonly<Record<SummonedDollsPartyId, ArenaPoint>>;
+  displayRadius: number;
+  radiusConfirmed: false;
+}
+
+export interface SummonedDollsEnumerationSnapshot {
+  capturedAtEventId: 'enumeration-stack-snapshot';
+  positions: Readonly<Record<SummonedDollsPartyId, ArenaPoint>>;
+}
+
+export interface SummonedDollsEnumerationGroupResult {
+  targetId: SummonedDollsEnumerationTargetId;
+  center: ArenaPoint;
+  expectedMemberIds: readonly SummonedDollsPartyId[];
+  memberIds: readonly SummonedDollsPartyId[];
+  count: number;
+  expectedCount: 2;
+  countStatus: 'correct' | 'under' | 'over';
+  missingExpectedIds: readonly SummonedDollsPartyId[];
+  unexpectedMemberIds: readonly SummonedDollsPartyId[];
+  distances: Readonly<Record<SummonedDollsPartyId, number>>;
+  passesDisplayCheck: boolean;
+}
+
+export interface SummonedDollsEnumerationResult {
+  evaluatedAtEventId: 'enumeration-stack-impact';
+  radius: number;
+  radiusConfirmed: false;
+  groups: Readonly<Record<SummonedDollsEnumerationTargetId, SummonedDollsEnumerationGroupResult>>;
+  playersInBothGroups: readonly SummonedDollsPartyId[];
+  allGroupsPassDisplayCheck: boolean;
+}
+
+export interface SummonedDollsEnumerationCircle {
+  sourceId: SummonedDollsEnumerationTargetId;
+  position: ArenaPoint;
+  radius: number;
+  radiusConfirmed: false;
+  phase: 'ready' | 'snapshot' | 'impact';
+}
+
 export interface SummonedDollsScenario {
   id: string;
   configuration: SummonedDollsConfiguration;
   pattern: SummonedDollsPatternConfig;
   statuses: readonly SummonedDollsStatusSpec[];
   firstResolution: SummonedDollsFirstResolutionConfig;
+  shiftDisplayMs: number;
+  magicBurst: SummonedDollsMagicBurstConfig;
   spreadPositions: Readonly<Record<SummonedDollsPartyId, ArenaPoint>>;
   party: readonly SummonedDollsPartyMember[];
   events: readonly SummonedDollsEventSpec[];
@@ -164,13 +289,6 @@ const displayEvent = (
   description: string,
   kind: SummonedDollsEventSpec['kind']
 ): SummonedDollsEventSpec => ({ id, label, description, kind, implemented: true, timingConfirmed: false });
-
-const reservedEvent = (
-  id: SummonedDollsEventId,
-  label: string,
-  description: string,
-  kind: SummonedDollsEventSpec['kind']
-): SummonedDollsEventSpec => ({ id, label, description, kind, implemented: false, timingConfirmed: false });
 
 export const SUMMONED_DOLLS_EVENTS: readonly SummonedDollsEventSpec[] = [
   displayEvent('even-explosion-status', '雙數爆炸狀態', 'D1、D2 獲得爆炸目標；實際持續時間尚未確認。', 'status'),
@@ -187,13 +305,25 @@ export const SUMMONED_DOLLS_EVENTS: readonly SummonedDollsEventSpec[] = [
   displayEvent('gale-impact', '烈風傷害判定', '三條烈風 AOE 完成判定；與光爆的相對時間待確認。', 'impact'),
   displayEvent('light-blast-floor', '生成光爆即死格', '將光爆判定瞬間的玩家所在格轉換為即死區。', 'floor-update'),
   displayEvent('magic-vulnerability', '魔法受傷加重', '光爆命中後，對四名玩家施加魔法受傷加重。', 'status'),
-  displayEvent('prepare-shift', '更新場地狀態', '保留完成後的地板資料，準備後續同步平移。', 'floor-update'),
-  reservedEvent('shift-to-former-aoe', '同步平移', '全隊移入原烈風攻擊列；具體格位讓位規則待確認。', 'movement'),
-  reservedEvent('magic-burst-cast', '魔爆法', 'BOSS 詠唱魔爆法；實際時間與傷害資料待確認。', 'cast'),
-  reservedEvent('spread-markers', '分散圓形 AOE', '四人獲得分散點名；範圍與時間待確認。', 'marker'),
-  reservedEvent('second-aoe-placement', '外側放置二段 AOE', '在判定位置生成二段 AOE，並引導至遠離中央的位置。', 'movement'),
-  reservedEvent('return-to-center', '返回中央安全區', '分散判定後四人向中央集合。', 'movement'),
-  reservedEvent('dps-stacks', '雙數爆炸分攤', 'T＋近戰、H＋遠程分別承接 D1、D2 的雙數爆炸。', 'stack')
+  displayEvent('prepare-shift', '烈風解除與即死格確定', '烈風 AOE 解除；保留魔紋與光爆即死格。', 'floor-update'),
+  displayEvent('shift-ready', '同步平移就緒', '依當次小怪配置計算可橫移一格的候選位置。', 'movement'),
+  displayEvent('shift-to-former-aoe', '同步平移', '四人依配置移入已解除的烈風範圍；不將整列直接視為安全。', 'movement'),
+  displayEvent('shift-complete', '同步平移完成', '保存四名玩家各自的位置，供下一機制使用。', 'movement'),
+  displayEvent('prepare-magic-burst', '準備魔爆法', '同步平移位置已鎖定，準備四人圓形 AOE。', 'floor-update'),
+  displayEvent('magic-burst-cast', '魔爆法', 'BOSS 詠唱魔爆法；技能秒數尚待實機確認。', 'cast'),
+  displayEvent('magic-burst-targets', '四人圓形點名', '四名玩家各自獲得一個跟隨本人的圓形 AOE。', 'marker'),
+  displayEvent('magic-burst-positioning', '外側放置 AOE', '將四個圓形引導至各自安全格的外側角落。', 'movement'),
+  displayEvent('magic-burst-snapshot', '記錄魔爆法位置', '以四名玩家的精確世界座標建立第一次判定快照。', 'snapshot'),
+  displayEvent('magic-burst-first-impact', '魔爆法第一次判定', '四個圓形在快照座標完成第一次判定。', 'impact'),
+  displayEvent('magic-burst-vulnerability', '魔法受傷加重', '第一次判定後，四名玩家的魔法受傷加重狀態重新套用。', 'status'),
+  displayEvent('magic-burst-second-telegraph', '二段 AOE 預警', '四個二段圓形固定於第一次快照座標，不再跟隨玩家。', 'telegraph'),
+  displayEvent('magic-burst-evacuation', '離開二段 AOE', '四人於二段預警期間開始移向兩組分攤準備位置。', 'movement'),
+  displayEvent('enumeration-stack-ready', '雙數爆炸集合', '顯示 D1、D2 各自的展示分攤範圍；二段魔爆法仍未結算。', 'stack'),
+  displayEvent('magic-burst-second-impact', '魔爆法第二次判定', '四個圓形在原快照座標再次發動。', 'impact'),
+  displayEvent('enumeration-stack-snapshot', '記錄分攤位置', '以判定瞬間的四名玩家世界座標及 D1、D2 位置建立快照。', 'snapshot'),
+  displayEvent('enumeration-stack-impact', '雙數爆炸判定', '依展示半徑分別檢查兩組人數及成員。', 'impact'),
+  displayEvent('enumeration-stack-resolved', '雙數爆炸結算', '顯示兩組練習判定結果並清除分攤範圍與狀態。', 'stack'),
+  displayEvent('mechanic-finished', '召喚人偶結束', '本輪展示完成；正式死亡與整體成功條件尚待補完。', 'floor-update')
 ] as const;
 
 const IMPLEMENTED_EVENT_IDS = SUMMONED_DOLLS_EVENTS
@@ -316,6 +446,30 @@ function scenarioForSide(
     healer: { x: rightSafeLane! + .38, y: 2.28 },
     'dps-ranged': { x: rightSafeLane! + .62, y: 3.72 }
   };
+  const shiftDestinationLanes = configuration.dollLanes.join(',') === '0,2,4'
+    ? [0, 2] as const
+    : [1, 3] as const;
+  const [leftShiftLane, rightShiftLane] = shiftDestinationLanes;
+  const magicBurst: SummonedDollsMagicBurstConfig = {
+    displayRadius: SUMMONED_DOLLS_MAGIC_BURST_DISPLAY_RADIUS,
+    radiusConfirmed: false,
+    movementDisplayMs: SUMMONED_DOLLS_MAGIC_BURST_MOVEMENT_MS,
+    placementPositions: {
+      tank: { x: Number((leftShiftLane + .16).toFixed(2)), y: 2.16 },
+      'dps-melee': { x: Number((leftShiftLane + .16).toFixed(2)), y: 3.84 },
+      healer: { x: Number((rightShiftLane + .84).toFixed(2)), y: 2.16 },
+      'dps-ranged': { x: Number((rightShiftLane + .84).toFixed(2)), y: 3.84 }
+    },
+    enumerationPreparationPositions: {
+      tank: { x: Number((leftShiftLane + .62).toFixed(2)), y: 2.9 },
+      'dps-melee': { x: Number((leftShiftLane + .82).toFixed(2)), y: 3.1 },
+      healer: { x: Number((rightShiftLane + .18).toFixed(2)), y: 2.9 },
+      'dps-ranged': { x: Number((rightShiftLane + .38).toFixed(2)), y: 3.1 }
+    },
+    enumerationGroups: [['tank', 'dps-melee'], ['healer', 'dps-ranged']],
+    enumerationDisplayRadius: SUMMONED_DOLLS_ENUMERATION_DISPLAY_RADIUS,
+    enumerationRadiusConfirmed: false
+  };
   return {
     id: `${dollSide}-${configuration.dollLanes.join('')}-display-fixture`,
     configuration,
@@ -326,8 +480,8 @@ function scenarioForSide(
         label: '爆炸目標',
         targetIds: ['dps-melee', 'dps-ranged'],
         appliedAtEventId: 'even-explosion-status',
-        expiresAtEventId: 'dps-stacks',
-        resolvesAtEventId: 'dps-stacks',
+        expiresAtEventId: 'enumeration-stack-resolved',
+        resolvesAtEventId: 'enumeration-stack-resolved',
         durationMs: null,
         resolutionPairs: [
           { targetId: 'dps-melee', partnerId: 'tank' },
@@ -341,13 +495,16 @@ function scenarioForSide(
         appliedAtEventId: 'magic-vulnerability',
         expiresAtEventId: null,
         resolvesAtEventId: null,
-        durationMs: null
+        durationMs: null,
+        reappliedAtEventIds: ['magic-burst-vulnerability']
       }
     ],
     firstResolution: {
       sources: ['light-blast', 'gale'],
       relativeOrderConfirmed: false
     },
+    shiftDisplayMs: SUMMONED_DOLLS_SHIFT_DISPLAY_MS,
+    magicBurst,
     spreadPositions,
     party: PARTY,
     events: SUMMONED_DOLLS_EVENTS,
@@ -375,6 +532,147 @@ export function createSummonedDollsScenario(random: () => number = Math.random):
 
 function cellKey(cell: SummonedDollsCell): string {
   return `${cell.row}-${cell.col}`;
+}
+
+const SHIFT_DIRECTIONS_BY_CONFIGURATION: Readonly<Record<
+  string,
+  Readonly<Record<SummonedDollsPartyId, SummonedDollsShiftDirection>>
+>> = {
+  '0,2,4': { tank: 'left', healer: 'left', 'dps-melee': 'left', 'dps-ranged': 'left' },
+  '1,3,4': { tank: 'right', healer: 'right', 'dps-melee': 'right', 'dps-ranged': 'right' }
+};
+
+function cellFromPoint(point: ArenaPoint): SummonedDollsCell {
+  return {
+    row: Math.max(0, Math.min(SUMMONED_DOLLS_GRID_SIZE - 1, Math.floor(point.y))),
+    col: Math.max(0, Math.min(SUMMONED_DOLLS_GRID_SIZE - 1, Math.floor(point.x)))
+  };
+}
+
+export function createSummonedDollsShiftPlan(
+  scenario: SummonedDollsScenario,
+  startPositions: Readonly<Record<SummonedDollsPartyId, ArenaPoint>>,
+  floorCells: readonly SummonedDollsFloorCell[]
+): SummonedDollsShiftPlan {
+  const configurationKey = scenario.configuration.dollLanes.join(',');
+  const configuredDirections = SHIFT_DIRECTIONS_BY_CONFIGURATION[configurationKey];
+  if (!configuredDirections) throw new Error(`No confirmed shift plan for doll lanes ${configurationKey}.`);
+  const formerGaleKeys = new Set(scenario.configuration.dolls
+    .flatMap(doll => doll.attackCells)
+    .map(cellKey));
+  const hazardousKeys = new Set(floorCells
+    .filter(cell => cell.effects.some(effect => [
+      'aoe-telegraph', 'pattern-step', 'pattern-danger', 'light-blast-lethal'
+    ].includes(effect.kind)))
+    .map(cellKey));
+
+  const candidateEntries = scenario.party.map(member => {
+    const start = startPositions[member.id];
+    const options = ([['left', -1], ['right', 1]] as const).flatMap(([direction, delta]) => {
+      const position = { x: Number((start.x + delta).toFixed(6)), y: start.y };
+      if (position.x < 0 || position.x >= SUMMONED_DOLLS_GRID_SIZE) return [];
+      const cell = cellFromPoint(position);
+      const key = cellKey(cell);
+      if (!formerGaleKeys.has(key) || hazardousKeys.has(key)) return [];
+      return [{ direction, position, cell } satisfies SummonedDollsShiftCandidate];
+    });
+    return [member.id, options] as const;
+  });
+  const candidates: Record<SummonedDollsPartyId, readonly SummonedDollsShiftCandidate[]> = {
+    tank: [],
+    healer: [],
+    'dps-melee': [],
+    'dps-ranged': [],
+    ...Object.fromEntries(candidateEntries)
+  };
+
+  const targetPositions: Partial<Record<SummonedDollsPartyId, ArenaPoint>> = {};
+  const targetCells: Partial<Record<SummonedDollsPartyId, SummonedDollsCell>> = {};
+  for (const member of scenario.party) {
+    const selected = candidates[member.id]
+      .find(candidate => candidate.direction === configuredDirections[member.id]);
+    if (!selected) continue;
+    targetPositions[member.id] = { ...selected.position };
+    targetCells[member.id] = { ...selected.cell };
+  }
+  const targetKeys = Object.values(targetCells).map(cellKey);
+  return {
+    configurationKey,
+    startPositions: Object.fromEntries(Object.entries(startPositions)
+      .map(([id, point]) => [id, { ...point }])) as Record<SummonedDollsPartyId, ArenaPoint>,
+    candidates,
+    targetPositions,
+    targetCells,
+    collisionFree: targetKeys.length === scenario.party.length
+      && new Set(targetKeys).size === targetKeys.length
+  };
+}
+
+export function evaluateSummonedDollsEnumeration(
+  scenario: SummonedDollsScenario,
+  positions: Readonly<Record<SummonedDollsPartyId, ArenaPoint>>
+): SummonedDollsEnumerationResult {
+  const radius = scenario.magicBurst.enumerationDisplayRadius;
+  const results = scenario.magicBurst.enumerationGroups.map(expectedMemberIds => {
+    const targetId = expectedMemberIds.find(id =>
+      scenario.party.find(member => member.id === id)?.hasStackBuff
+    ) as SummonedDollsEnumerationTargetId;
+    const center = positions[targetId];
+    const distances = Object.fromEntries(scenario.party.map(member => [
+      member.id,
+      Math.hypot(
+        positions[member.id].x - center.x,
+        positions[member.id].y - center.y
+      )
+    ])) as Record<SummonedDollsPartyId, number>;
+    const memberIds = scenario.party
+      .filter(member => distances[member.id] <= radius)
+      .map(member => member.id);
+    const expectedMemberSet = new Set<SummonedDollsPartyId>(expectedMemberIds);
+    const missingExpectedIds = expectedMemberIds.filter(id => !memberIds.includes(id));
+    const unexpectedMemberIds = memberIds.filter(id => !expectedMemberSet.has(id));
+    const countStatus: SummonedDollsEnumerationGroupResult['countStatus'] = memberIds.length < 2
+      ? 'under'
+      : memberIds.length > 2 ? 'over' : 'correct';
+    return {
+      targetId,
+      center: { ...center },
+      expectedMemberIds: [...expectedMemberIds],
+      memberIds,
+      count: memberIds.length,
+      expectedCount: 2 as const,
+      countStatus,
+      missingExpectedIds,
+      unexpectedMemberIds,
+      distances,
+      passesDisplayCheck: false
+    };
+  });
+  const memberships = new Map<SummonedDollsPartyId, number>();
+  for (const result of results) {
+    for (const id of result.memberIds) memberships.set(id, (memberships.get(id) ?? 0) + 1);
+  }
+  const playersInBothGroups = scenario.party
+    .map(member => member.id)
+    .filter(id => (memberships.get(id) ?? 0) > 1);
+  for (const result of results) {
+    result.passesDisplayCheck = result.countStatus === 'correct'
+      && result.missingExpectedIds.length === 0
+      && result.unexpectedMemberIds.length === 0
+      && !result.memberIds.some(id => playersInBothGroups.includes(id));
+  }
+  const groups: Record<SummonedDollsEnumerationTargetId, SummonedDollsEnumerationGroupResult> = {
+    'dps-melee': results.find(result => result.targetId === 'dps-melee')!,
+    'dps-ranged': results.find(result => result.targetId === 'dps-ranged')!
+  };
+  return {
+    evaluatedAtEventId: 'enumeration-stack-impact',
+    radius,
+    radiusConfirmed: false,
+    groups,
+    playersInBothGroups,
+    allGroupsPassDisplayCheck: results.every(result => result.passesDisplayCheck)
+  };
 }
 
 function eventIndex(eventId: SummonedDollsEventId | null, scenario: SummonedDollsScenario): number {
@@ -432,7 +730,8 @@ export function summonedDollsFloorAtEvent(
   eventId: SummonedDollsEventId | null,
   scenario: SummonedDollsScenario = createFixedSummonedDollsScenario(),
   lightBlastSnapshot: Readonly<Partial<Record<SummonedDollsPartyId, ArenaPoint>>> | null = null,
-  patternStepIndex = 0
+  patternStepIndex = 0,
+  movementCandidates: readonly ArenaPoint[] = []
 ): readonly SummonedDollsFloorCell[] {
   const effects = new Map<string, SummonedDollsFloorEffect[]>();
   const addEffect = (
@@ -486,13 +785,19 @@ export function summonedDollsFloorAtEvent(
     row: Math.floor(index / SUMMONED_DOLLS_GRID_SIZE),
     col: index % SUMMONED_DOLLS_GRID_SIZE
   }));
-  if (galeStarted) {
+  const shiftPrepared = eventReached(eventId, 'prepare-shift', scenario);
+  if (galeStarted && !shiftPrepared) {
     const hazardKinds: readonly SummonedDollsFloorEffectKind[] = [
       'aoe-telegraph', 'pattern-step', 'pattern-danger', 'light-blast-lethal'
     ];
     const safeCells = allCells.filter(cell =>
       !(effects.get(cellKey(cell)) ?? []).some(effect => hazardKinds.includes(effect.kind)));
     addEffect(safeCells, { kind: 'movement-safe', source: 'movement' });
+  }
+  if (shiftPrepared && movementCandidates.length > 0) {
+    addEffect(movementCandidates.map(cellFromPoint), {
+      kind: 'movement-safe', source: 'movement'
+    });
   }
 
   return allCells.map(cell => {

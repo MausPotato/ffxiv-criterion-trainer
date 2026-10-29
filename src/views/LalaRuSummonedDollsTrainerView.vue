@@ -52,6 +52,16 @@ const safeLaneLabel = computed(() => trainer.scenario.configuration.safeLanes
         :can-move-selected-player="trainer.canMoveSelectedPlayer.value"
         :even-explosion-active="trainer.evenExplosionActive.value"
         :magic-vulnerability-target-ids="trainer.magicVulnerabilityTargetIds.value"
+        :shift-phase="trainer.shiftPhase.value"
+        :shift-candidate-positions="trainer.movementCandidates.value"
+        :shift-target-positions="trainer.shiftPlan.value?.targetPositions ?? {}"
+        :shift-display-ms="trainer.scenario.shiftDisplayMs"
+        :magic-burst-phase="trainer.magicBurstPhase.value"
+        :magic-burst-circles="trainer.magicBurstCircles.value"
+        :magic-burst-movement-ms="trainer.scenario.magicBurst.movementDisplayMs"
+        :enumeration-phase="trainer.enumerationPhase.value"
+        :enumeration-circles="trainer.enumerationCircles.value"
+        :enumeration-result="trainer.enumerationResult.value"
         @start="trainer.start"
         @update-player-position="trainer.setSelectedPlayerPosition"
       />
@@ -68,8 +78,8 @@ const safeLaneLabel = computed(() => trainer.scenario.configuration.safeLanes
         />
         <p class="mode-description">
           {{ trainer.mode.value === 'tutorial'
-            ? '分散階段示範四人的已知範例站位。'
-            : '隊友依範例移動；YOU 保留原位並由玩家自行拖曳。' }}
+            ? '示範同步平移、魔爆法放置、二段撤離與兩組雙數爆炸。'
+            : '隊友依範例集合；YOU 必須自行放置 AOE 並進入所屬分攤組。' }}
         </p>
       </TrainerPracticeSettings>
     </template>
@@ -86,6 +96,7 @@ const safeLaneLabel = computed(() => trainer.scenario.configuration.safeLanes
           type="button"
           class="role-card assignment-card"
           :class="[member.role, { selected: trainer.selectedPlayerId.value === member.id }]"
+          :disabled="trainer.started.value"
           :aria-pressed="trainer.selectedPlayerId.value === member.id"
           :aria-label="`選擇 ${member.label} 作為操作角色`"
           @click="trainer.selectPlayer(member.id)"
@@ -107,7 +118,10 @@ const safeLaneLabel = computed(() => trainer.scenario.configuration.safeLanes
         :show-streak="false"
       />
       <TrainerStageCard
-        badge="第一階段"
+        :badge="trainer.enumerationPhase.value !== 'inactive'
+          ? '第四階段'
+          : trainer.magicBurstPhase.value !== 'inactive' ? '第三階段'
+          : trainer.shiftPhase.value === 'locked-before-gale' ? '第一階段' : '第二階段'"
         :clock="stageClock"
         :clock-tone="trainer.started.value ? 'default' : 'muted'"
         :title="stageTitle"
@@ -125,7 +139,7 @@ const safeLaneLabel = computed(() => trainer.scenario.configuration.safeLanes
 
     <template #timeline>
       <section class="event-spec" aria-label="事件順序">
-        <div class="role-heading"><span>事件規格</span><small>後半段僅預留</small></div>
+        <div class="role-heading"><span>事件規格</span><small>完整展示流程</small></div>
         <ol>
           <li
             v-for="event in trainer.scenario.events"
@@ -141,7 +155,7 @@ const safeLaneLabel = computed(() => trainer.scenario.configuration.safeLanes
     <template #actions>
       <TrainerActionRow>
         <button class="primary-button" type="button" :disabled="!trainer.canAdvance.value" @click="trainer.advance">
-          {{ trainer.complete.value ? '前半段完成' : '下一事件' }}
+          {{ trainer.complete.value ? '本輪完成' : '下一事件' }}
         </button>
         <button class="secondary-button" type="button" :disabled="!trainer.started.value" @click="trainer.restart">重新開始</button>
         <button class="secondary-button" type="button" :disabled="!trainer.started.value" @click="trainer.reset">重置</button>

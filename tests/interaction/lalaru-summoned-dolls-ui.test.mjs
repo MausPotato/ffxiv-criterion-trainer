@@ -13,6 +13,7 @@ test('summoned dolls uses the existing party cards as an accessible single-role 
   assert.match(view, /<button[\s\S]*?v-for="member in trainer\.scenario\.party"/);
   assert.match(view, /:aria-pressed="trainer\.selectedPlayerId\.value === member\.id"/);
   assert.match(view, /@click="trainer\.selectPlayer\(member\.id\)"/);
+  assert.match(view, /:disabled="trainer\.started\.value"/);
   assert.doesNotMatch(view, /<select|role-picker|角色選擇/);
   assert.match(arena, /'selected-player': member\.id === selectedPlayerId/);
   assert.match(view, /:party-positions="trainer\.partyPositions\.value"/);
@@ -34,13 +35,47 @@ test('summoned dolls uses the shared camera controls and rotates one complete wo
   assert.match(arena, /:visible="currentEvent !== null"/);
   assert.match(arena, /@rotate="rotateCameraBy"/);
   assert.match(arena, /@reset="resetCamera"/);
-  assert.match(arena, /<div class="dolls-arena" :style="cameraStyle">/);
+  assert.match(arena, /class="dolls-arena"[\s\S]*?:style="\{\s*\.\.\.cameraStyle/);
   assert.match(arena, /\.dolls-arena[^}]*transform:\s*rotate\(var\(--camera-rotation\)\)/);
   assert.match(arena, /canRotateCamera: \(\) => props\.currentEvent !== null/);
   assert.doesNotMatch(arena, /emit\(['"](?:reroll|restart|resetScenario)/);
   assert.match(trainer, /function rerollScenario/);
   assert.match(trainer, /function restart\(\)[\s\S]*?rerollScenario\(\)/);
   assert.doesNotMatch(trainer, /resetCamera/);
+});
+
+test('summoned dolls exposes candidate cells and uses a configurable transition for synchronized shift', () => {
+  assert.match(arena, /v-for="\(position, index\) in shiftCandidatePositions"/);
+  assert.match(arena, /class="shift-candidate"/);
+  assert.match(arena, /shift-transition-enabled/);
+  assert.match(arena, /transition:\s*left var\(--shift-display-ms\)/);
+  assert.match(trainer, /mode\.value === 'tutorial' \|\| member\.id !== selectedPlayerId\.value/);
+  assert.match(trainer, /currentEventId\.value === 'shift-to-former-aoe'/);
+});
+
+test('magic burst renders four event-controlled world circles below actors', () => {
+  assert.match(view, /:magic-burst-circles="trainer\.magicBurstCircles\.value"/);
+  assert.match(arena, /v-for="circle in magicBurstCircles"/);
+  assert.match(arena, /:style="circleStyle\(circle\)"/);
+  assert.match(arena, /:data-source-id="circle\.sourceId"/);
+  assert.match(arena, /:data-radius-confirmed="circle\.radiusConfirmed"/);
+  assert.match(arena, /\.magic-burst-circle[^}]*z-index:\s*6/);
+  assert.match(arena, /\.party-member[^}]*z-index:\s*12/);
+  assert.match(arena, /phase-second-telegraph/);
+  assert.match(arena, /\.magic-burst-circle\.phase-tracking:not\(\.manual-control\)[^}]*transition:/);
+  assert.match(trainer, /capturedAtEventId: 'magic-burst-snapshot'/);
+  assert.match(trainer, /positions: clonePartyPositions\(partyPositions\.value\)/);
+});
+
+test('enumeration renders two DPS-centered ranges and a compact resolved result', () => {
+  assert.match(view, /:enumeration-circles="trainer\.enumerationCircles\.value"/);
+  assert.match(view, /:enumeration-result="trainer\.enumerationResult\.value"/);
+  assert.match(arena, /v-for="circle in enumerationCircles"/);
+  assert.match(arena, /class="enumeration-circle"/);
+  assert.match(arena, /enumerationResult\.groups\[circle\.sourceId\]/);
+  assert.match(arena, /class="enumeration-result"/);
+  assert.match(arena, /\.enumeration-circle[^}]*z-index:\s*7/);
+  assert.match(arena, /\.party-member[^}]*z-index:\s*12/);
 });
 
 test('summoned dolls keeps actor text upright while the world and direction markers rotate', () => {
