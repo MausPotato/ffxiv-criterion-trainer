@@ -251,21 +251,6 @@ function crossStyle(cell: GridCell): Record<string, string> {
           <span>拉拉魯</span>
         </div>
 
-        <div v-if="showCannon" class="boss-cannon-cues">
-          <RotationCueIcon
-            v-if="phase === 'cannon-countdown'"
-            :arrow-side="cannonQuestion.arrowSide"
-            :dot-count="cannonSeconds"
-            :animation-key="cannonImpactKey"
-            :playing="true"
-          />
-          <MechanicIcon
-            class="boss-multiplier-icon"
-            :name="cannonQuestion.multiplier === 'III' ? 'multiplyIII' : 'multiplyV'"
-            :alt="`Boss 乘算 ${cannonQuestion.multiplier}`"
-          />
-        </div>
-
         <div
           v-for="(position, id) in actorPositions"
           :key="id"
@@ -287,10 +272,23 @@ function crossStyle(cell: GridCell): Record<string, string> {
           <b v-else-if="questionVisible" class="cleared">0</b>
         </div>
 
-        <div v-if="phase === 'cannon-countdown'" class="cannon-countdown">{{ cannonSeconds }}</div>
         <div v-if="phase === 'cannon-impact'" :key="cannonImpactKey" class="cannon-impact"></div>
         <div v-if="phase === 'resolved'" class="arena-result success">CLEAR</div>
         <div v-if="phase === 'dead'" class="arena-result failure">FAILED</div>
+      </div>
+      <div v-if="showCannon" class="boss-cannon-cues">
+        <RotationCueIcon
+          v-if="phase === 'cannon-countdown'"
+          :arrow-side="cannonQuestion.arrowSide"
+          :dot-count="cannonSeconds"
+          :animation-key="cannonImpactKey"
+          :playing="true"
+        />
+        <MechanicIcon
+          class="boss-multiplier-icon"
+          :name="cannonQuestion.multiplier === 'III' ? 'multiplyIII' : 'multiplyV'"
+          :alt="`Boss 乘算 ${cannonQuestion.multiplier}`"
+        />
       </div>
       <TrainerStartOverlay
         v-if="phase === 'idle'"
@@ -351,7 +349,6 @@ function crossStyle(cell: GridCell): Record<string, string> {
 .spatial-actor > span { font-size: clamp(6px, 1.4cqw, 10px); font-weight: 900; }
 .actor-debuff-icon { position: absolute; bottom: 86%; left: 50%; z-index: 5; width: clamp(28px, 5.2cqw, 46px); height: clamp(28px, 5.2cqw, 46px); object-fit: contain; filter: drop-shadow(0 2px 4px rgba(0,0,0,.75)); transform: translateX(-50%); pointer-events: none; }
 .spatial-actor b.cleared { position: absolute; bottom: 94%; left: 50%; display: grid; width: 27px; height: 27px; place-items: center; border: 1px solid #65dba4; border-radius: 5px; color: #8dffc1; background: #133b2c; font: 900 11px ui-monospace, monospace; transform: translateX(-50%); }
-.cannon-countdown { position: absolute; top: 8%; left: 50%; z-index: 20; color: #fff5c1; font: 900 42px ui-monospace, monospace; text-shadow: 0 0 14px #ff9e32; transform: translateX(-50%); }
 .cannon-impact { position: absolute; inset: 0; z-index: 18; animation: cannon-flash var(--cannon-impact-duration) ease-out both; pointer-events: none; }
 .arena-result { position: absolute; top: 6%; left: 50%; z-index: 23; padding: 7px 18px; border: 1px solid currentColor; border-radius: 999px; background: rgba(6,18,25,.9); font: 900 14px ui-monospace, monospace; letter-spacing: .15em; transform: translateX(-50%); }.arena-result.success { color: #7cebb4; }.arena-result.failure { color: #ff7b88; }
 @keyframes cell-pulse { from { filter: brightness(2.2); } to { filter: brightness(1); } }
